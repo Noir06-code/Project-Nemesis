@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verified Agent</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #f4f6f9; --surface: #ffffff; --line: #dde2ea; --text: #1b2433; --muted: #66738a;
+    --accent: #0f6e8c; --accent-ink: #ffffff; --accent-soft: #e3f1f6;
+    --ok: #17794a; --danger: #b3261e; --warn-bg: #fff6e0; --warn-line: #e6b94d;
+    --user-bg: #0f6e8c; --user-ink: #ffffff; --ai-bg: #eef1f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11161f; --surface: #1a212d; --line: #2c3646; --text: #e6ebf3; --muted: #93a0b5;
+      --accent: #4cb4d3; --accent-ink: #08212b; --accent-soft: #1b3440;
+      --ok: #55c68a; --danger: #ff8a80; --warn-bg: #2b2412; --warn-line: #8a6d1f;
+      --user-bg: #2a8aa8; --user-ink: #ffffff; --ai-bg: #232c3a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .app { max-width: 780px; margin: 0 auto; padding: 24px 16px 40px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 600; }
+  .status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+  .dot.on { background: var(--ok); }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .panel > h2 { font-size: 14px; font-weight: 600; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+  .badge { background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+  #log { height: 70vh; min-height: 420px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 85%; padding: 9px 13px; border-radius: 12px; white-space: pre-wrap; word-break: break-word; }
+  .msg.user { align-self: flex-end; background: var(--user-bg); color: var(--user-ink); border-bottom-right-radius: 3px; }
+  .msg.assistant, .msg.ai { align-self: flex-start; background: var(--ai-bg); border-bottom-left-radius: 3px; }
+  .msg.tool { align-self: flex-start; background: transparent; border: 1px dashed var(--line); color: var(--muted); font-size: 13px; }
+  .note { align-self: center; font-size: 12.5px; color: var(--muted); }
+  .note.error { color: var(--danger); }
+  .action { align-self: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; background: var(--surface); }
+  .action b { font-weight: 600; }
+  .action dl { margin: 4px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; color: var(--muted); }
+  .action dd { margin: 0; color: var(--text); word-break: break-word; }
+  #f { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+  #in { flex: 1; }
+  input[type=text], input[type=number], textarea, select {
+    font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 7px; padding: 8px 10px; width: 100%;
+  }
+  textarea { resize: vertical; min-height: 72px; }
+  input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { font: inherit; font-weight: 500; border-radius: 7px; border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 8px 14px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.danger { color: var(--danger); }
+  button.small { padding: 3px 9px; font-size: 13px; }
+  .card { align-self: stretch; border: 1px solid var(--warn-line); background: var(--warn-bg); border-radius: 10px; padding: 14px; }
+  .card h3 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+  .card .hint { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .field > label { font-size: 13px; font-weight: 500; }
+  .check { flex-direction: row; align-items: center; gap: 8px; }
+  .check input { width: auto; }
+  .tool-box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+  .tool-box > .tool-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .nest { border-left: 3px solid var(--accent-soft); padding-left: 10px; }
+  .item { display: flex; gap: 6px; align-items: flex-start; margin-bottom: 8px; }
+  .item > .body { flex: 1; min-width: 0; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .actions .spacer { flex: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Project Nemesis</h1>
+    <div class="status"><span class="dot" id="dot"></span><span id="stat">Connecting…</span></div>
+  </header>
+
+  <div>
+    <section class="panel">
+      <h2>Conversation</h2>
+      <div id="log" aria-live="polite"></div>
+      <form id="f">
+        <input type="text" id="in" autocomplete="off" placeholder="Message the agent" aria-label="Message">
+        <button class="primary">Send</button>
+      </form>
+    </section>
+
+  </div>
+</div>
+
+<script>
+const sid = crypto.randomUUID();
+const proto = location.protocol === "https:" ? "wss://" : "ws://";
+const chat = new WebSocket(`${proto}${location.host}/ws/chat?sid=${sid}`);
+const ver  = new WebSocket(`${proto}${location.host}/ws/verify?sid=${sid}`);
+const log = document.getElementById("log");
+const input = document.getElementById("in");
+
+/* ---------- helpers ---------- */
+const el = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
+const pretty = (k) => String(k).replace(/[_-]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+const scroll = () => { log.scrollTop = log.scrollHeight; };
+const uid = (() => { let n = 0; return () => "f" + (++n); })();
+
+function setConn(on, text) {
+  document.getElementById("dot").classList.toggle("on", on);
+  document.getElementById("stat").textContent = text;
+}
+chat.onopen = () => setConn(true, "Connected");
+chat.onclose = () => setConn(false, "Disconnected");
+chat.onerror = () => setConn(false, "Connection problem");
+
+
+/* ---------- tool call normalising ---------- */
+// Supports {id, function:{name, arguments:"{...}"}} and {id, name, arguments|args|input}
+function readCall(tc) {
+  const fn = tc.function || tc;
+  let args = fn.arguments ?? fn.args ?? fn.input ?? {};
+  let wasString = false;
+  if (typeof args === "string") {
+    wasString = true;
+    try { args = JSON.parse(args || "{}"); } catch { args = { value: args }; wasString = false; }
+  }
+  return { name: fn.name || "action", args, wasString };
+}
+function writeCall(original, args, wasString) {
+  const copy = JSON.parse(JSON.stringify(original));
+  const value = wasString ? JSON.stringify(args) : args;
+  const target = copy.function || copy;
+  if ("arguments" in target) target.arguments = value;
+  else if ("args" in target) target.args = value;
+  else if ("input" in target) target.input = value;
+  else target.arguments = value;
+  return copy;
+}
+
+/* ---------- read-only summary in the chat log ---------- */
+function summarise(args) {
+  const dl = el("dl");
+  const walk = (v, prefix) => {
+    if (v !== null && typeof v === "object") {
+      Object.entries(v).forEach(([k, x]) => walk(x, prefix ? `${prefix} › ${pretty(k)}` : pretty(k)));
+    } else {
+      dl.append(el("dt", "", prefix || "Value"), el("dd", "", v === null ? "—" : String(v)));
+    }
+  };
+  walk(args, "");
+  return dl;
+}
+function addAction(tc) {
+  const { name, args } = readCall(tc);
+  const box = el("div", "action");
+  box.append(el("b", "", pretty(name)));
+  if (args && Object.keys(args).length) box.append(summarise(args));
+  log.appendChild(box);
+}
+function addMsg(cls, text) {
+  const d = el("div", "msg " + cls, text);
+  log.appendChild(d);
+  scroll();
+}
+function addNote(cls, text) {
+  log.appendChild(el("div", "note " + cls, text));
+  scroll();
+}
+
+/* ---------- form builder: turns any JSON value into friendly fields ---------- */
+// returns { node, get() }
+function buildField(value, label, onRemove) {
+  const id = uid();
+  const wrap = el("div", "field");
+
+  if (typeof value === "boolean") {
+    wrap.classList.add("check");
+    const cb = el("input"); cb.type = "checkbox"; cb.id = id; cb.checked = value;
+    wrap.append(cb, Object.assign(el("label", "", label), { htmlFor: id }));
+    return { node: wrap, get: () => cb.checked };
+  }
+
+  if (Array.isArray(value)) {
+    wrap.append(el("label", "", label));
+    const list = el("div", "nest");
+    const rows = [];
+    const addRow = (v) => {
+      const item = el("div", "item");
+      const body = el("div", "body");
+      const f = buildField(v, `${label} ${rows.length + 1}`);
+      const row = { f, item };
+      const rm = el("button", "small danger", "Remove");
+      rm.type = "button";
+      rm.onclick = () => { item.remove(); rows.splice(rows.indexOf(row), 1); };
+      body.append(f.node);
+      item.append(body, rm);
+      list.append(item);
+      rows.push(row);
+    };
+    value.forEach(addRow);
+    const add = el("button", "small", "Add item");
+    add.type = "button";
+    const sample = value.length ? value[0] : "";
+    const blank = (s) => (s && typeof s === "object") ? (Array.isArray(s) ? [] : Object.fromEntries(Object.keys(s).map((k) => [k, blank(s[k])]))) : (typeof s === "number" ? 0 : typeof s === "boolean" ? false : "");
+    add.onclick = () => addRow(blank(sample));
+    wrap.append(list, add);
+    return { node: wrap, get: () => rows.map((r) => r.f.get()) };
+  }
+
+  if (value !== null && typeof value === "object") {
+    wrap.append(el("label", "", label));
+    const box = el("div", "nest");
+    const kids = Object.entries(value).map(([k, v]) => [k, buildField(v, pretty(k))]);
+    kids.forEach(([, f]) => box.append(f.node));
+    wrap.append(box);
+    return { node: wrap, get: () => Object.fromEntries(kids.map(([k, f]) => [k, f.get()])) };
+  }
+
+  const lab = Object.assign(el("label", "", label), { htmlFor: id });
+  wrap.append(lab);
+
+  if (typeof value === "number") {
+    const n = el("input"); n.type = "number"; n.step = "any"; n.id = id; n.value = value;
+    wrap.append(n);
+    return { node: wrap, get: () => (n.value === "" ? null : Number(n.value)) };
+  }
+
+  const s = value === null ? "" : String(value);
+  const multi = s.length > 70 || s.includes("\n");
+  const t = multi ? el("textarea") : el("input");
+  if (!multi) t.type = "text";
+  t.id = id; t.value = s;
+  wrap.append(t);
+  return { node: wrap, get: () => (value === null && t.value === "" ? null : t.value) };
+}
+
+/* ---------- chat (already verified messages) ---------- */
+chat.onmessage = (e) => {
+  const m = JSON.parse(e.data);
+  if (m.type === "done") return addNote("", "Finished");
+  if (m.type === "info" || m.type === "error") return addNote(m.type, m.content);
+  if (m.content) addMsg(m.role === "tool" ? "tool" : m.role, m.content);
+  (m.tool_calls || []).forEach(addAction);
+  scroll();
+};
+
+document.getElementById("f").onsubmit = (e) => {
+  e.preventDefault();
+  const t = input.value.trim();
+  if (!t || chat.readyState !== 1) return;
+  addMsg("user", t);
+  chat.send(JSON.stringify({ type: "user_message", content: t }));
+  input.value = "";
+};
+
+/* ---------- proposals ---------- */
+const roleLabel = { assistant: "Agent reply", tool: "Tool result", user: "User message", system: "System message" };
+
+ver.onmessage = (e) => {
+  const p = JSON.parse(e.data);
+  if (p.type !== "proposal") return;
+
+  const card = el("div", "card");
+  card.append(el("h3", "", (roleLabel[p.role] || pretty(p.role)) + (p.name ? ` · ${pretty(p.name)}` : "")));
+  card.append(el("p", "hint", "Please review before this is sent. You can change anything below."));
+
+  const msgField = buildField(p.content || "", p.tool_calls && p.tool_calls.length ? "Message" : "Content");
+  const ta = msgField.node.querySelector("input,textarea");
+  if (ta && ta.tagName === "INPUT") {
+    const big = el("textarea"); big.id = ta.id; big.value = ta.value; ta.replaceWith(big);
+    msgField.get = () => big.value;
+  }
+  card.append(msgField.node);
+
+  const calls = (p.tool_calls || []).map((tc) => {
+    const r = readCall(tc);
+    const box = el("div", "tool-box");
+    const title = el("div", "tool-title");
+    title.append(el("span", "badge", "Action"), el("span", "", pretty(r.name)));
+    box.append(title);
+    const keys = r.args && typeof r.args === "object" ? Object.keys(r.args) : [];
+    const f = keys.length ? buildField(r.args, "Details") : null;
+    if (f) {
+      // flatten the top-level wrapper so fields sit directly in the box
+      const inner = f.node.querySelector(".nest");
+      box.append(inner ? inner : f.node);
+      inner && inner.classList.remove("nest");
+    } else {
+      box.append(el("div", "hint", "This action needs no extra details."));
+    }
+    card.append(box);
+    return { tc, r, f };
+  });
+
+  const answer = (type) => {
+    const out = { type, id: p.id };
+    if (type === "edit") {
+      out.content = msgField.get();
+      if (calls.length) {
+        out.tool_calls = calls.map(({ tc, r, f }) => writeCall(tc, f ? f.get() : r.args, r.wasString));
+      }
+    }
+    ver.send(JSON.stringify(out));
+    const done = { approve: "Approved", edit: "Sent with your changes", reject: "Rejected" }[type];
+    card.replaceWith(el("div", "note", done));
+    scroll();
+  };
+
+  const bar = el("div", "actions");
+  const approve = el("button", "primary", "Approve"); approve.onclick = () => answer("approve");
+  const edit = el("button", "", "Send with changes"); edit.onclick = () => answer("edit");
+  const reject = el("button", "danger", "Reject"); reject.onclick = () => answer("reject");
+  bar.append(approve, edit, el("span", "spacer"), reject);
+  card.append(bar);
+
+  log.appendChild(card);
+  scroll();
+};
+</script>
+</body>
+</html>

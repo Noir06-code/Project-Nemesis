@@ -1,8 +1,10 @@
+import hmac
 import os
-import anyio
 from contextlib import asynccontextmanager
+from urllib.parse import parse_qs
 
-from fastapi import APIRouter, FastAPI, HTTPException
+import anyio
+from fastapi import APIRouter, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from mcp.server.fastmcp import FastMCP
 
@@ -25,7 +27,7 @@ def _blocking_lookup(key: str) -> str:
 
 # =============== MCP tools ===============
 mcp = FastMCP("MyTools", stateless_http=True, json_response=True)
-
+'''
 @mcp.tool()
 async def add(a: float, b: float) -> float:
     """Add two numbers."""
@@ -52,14 +54,14 @@ async def lookup(key: str) -> str:
     """Example of running blocking code safely."""
     return await anyio.to_thread.run_sync(_blocking_lookup, key)
 
-
+'''
 # =============== FastAPI app ===============
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with mcp.session_manager.run():   # required for MCP
         yield
 
-app = FastAPI(title="REST + MCP", lifespan=lifespan)
+app = FastAPI(title="REST + MCP + WebSocket", lifespan=lifespan)
 
 
 # =============== REST routes ===============
@@ -98,32 +100,62 @@ async def delete_note(title: str):
 
 app.include_router(api)
 
-# MCP is served at /mcp. Mount LAST so the REST routes above match first.
+
+# =============== WebSocket echo channel ===============
+# NOTE: must be registered BEFORE the catch-all mount("/") below.
+@app.websocket("/ws")
+async def my_ws(ws: WebSocket):
+    await ws.accept()
+    try:
+        while True:
+            msg = await ws.receive_text()
+            await ws.send_text(f"echo: {msg}")
+    except WebSocketDisconnect:
+        pass
+
+
 app.mount("/", mcp.streamable_http_app())
 
 
-# =============== auth middleware (covers REST and MCP) ===============
+# =============== auth middleware (covers REST, MCP and WebSocket) ===============
+def _token_ok(supplied: str | None) -> bool:
+    return supplied is not None and hmac.compare_digest(supplied, API_TOKEN)
+
+
 class SecurityMiddleware:
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or scope["path"] == "/health":
+        if scope["type"] not in ("http", "websocket") or scope["path"] == "/health":
             return await self.app(scope, receive, send)
 
+        is_ws = scope["type"] == "websocket"
         headers = {k.decode().lower(): v.decode() for k, v in scope["headers"]}
 
         origin = headers.get("origin")
         if origin and origin not in ALLOWED_ORIGINS:
-            return await self._deny(send, 403, "Forbidden origin")
+            return await self._deny(send, is_ws, 403, "Forbidden origin")
 
-        if headers.get("authorization") != f"Bearer {API_TOKEN}":
-            return await self._deny(send, 401, "Unauthorized")
+        auth = headers.get("authorization", "")
+        supplied = auth[7:] if auth.startswith("Bearer ") else None
+
+        # Browsers can't set headers on WebSocket connections, so also
+        # accept ?token=... for WS only (note: URLs may end up in logs).
+        if supplied is None and is_ws:
+            qs = parse_qs(scope.get("query_string", b"").decode())
+            supplied = (qs.get("token") or [None])[0]
+
+        if not _token_ok(supplied):
+            return await self._deny(send, is_ws, 401, "Unauthorized")
 
         await self.app(scope, receive, send)
 
     @staticmethod
-    async def _deny(send, status, msg):
+    async def _deny(send, is_ws, status, msg):
+        if is_ws:
+            # Closing before accept -> client sees an HTTP 403 handshake rejection
+            return await send({"type": "websocket.close", "code": 1008})
         await send({"type": "http.response.start", "status": status,
                     "headers": [(b"content-type", b"application/json")]})
         await send({"type": "http.response.body",

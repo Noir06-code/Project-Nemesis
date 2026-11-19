@@ -61,13 +61,21 @@ from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from typing_extensions import TypedDict
-
+import requests
+#from Tools.tools import available_tools
 load_dotenv()
 
 
 # ----------------------------------------------------------------------------
 # Helpers: turning messages into JSON for the websocket
 # ----------------------------------------------------------------------------
+
+
+def set_tools(tools):
+    requests.post("http://localhost:5000/tool_gaurd/set_available",
+                  json={"tools":[i.name for i in tools]}
+                  )
+    
 def text_of(content):
     """Message content can be a str or a list of blocks (e.g. Gemini/Claude)."""
     if isinstance(content, str):
@@ -203,7 +211,7 @@ def _apply_decision(msg, d):
 # The reducer: same as add_messages, but everything that is not a user message
 # must be approved / edited / rejected by the user before it is merged.
 # ----------------------------------------------------------------------------
-def verified_add_messages(left, right):
+'''def verified_add_messages(left, right):
     verifier = _current_verifier.get()
     if verifier is None:  # no session attached -> behave like plain add_messages
         return add_messages(left, right)
@@ -219,6 +227,49 @@ def verified_add_messages(left, right):
         out = _apply_decision(m, verifier.request(m))
         if out is not None:
             accepted.append(out)
+    return add_messages(left, accepted)'''
+
+def VERIFICATION_NEEDED():
+    data = requests.get("http://localhost:5000/tool_gaurd/get_gaurd")
+    return data.json().get("tools")
+
+
+
+def verified_add_messages(left, right):
+    verifier = _current_verifier.get()
+
+    if verifier is None:
+        return add_messages(left, right)
+
+    incoming = convert_to_messages(
+        right if isinstance(right, list) else [right]
+    )
+
+    accepted = []
+
+    for m in incoming:
+        if m.id is None:
+            m.id = str(uuid.uuid4())
+
+        # Always allow user messages and removal operations
+        if isinstance(m, (HumanMessage, RemoveMessage)):
+            accepted.append(m)
+            continue
+
+        # Allow AI messages containing only approved tool calls
+        if isinstance(m, AIMessage) and m.tool_calls:
+            tool_names = {tc["name"] for tc in m.tool_calls}
+
+            if not tool_names in VERIFICATION_NEEDED():
+                accepted.append(m)
+                continue
+
+        # Everything else requires verification
+        out = _apply_decision(m, verifier.request(m))
+
+        if out is not None:
+            accepted.append(out)
+
     return add_messages(left, accepted)
 
 
@@ -242,6 +293,7 @@ class Agent():
 
         self.llm = init_chat_model(model)
         self.llm_with_tools=self.llm.bind_tools(tools)
+        set_tools(tools)
         chatbot=self.chatbot
         builder = StateGraph(State)
         builder.add_node(chatbot)

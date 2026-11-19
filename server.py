@@ -17,6 +17,8 @@ agent = Agent(tools=tools)  # your Agent class, unchanged
 
 sessions = {}
 sessions_lock = threading.Lock()
+tool_gaurd_needed=[]
+available_tools=[]
 
 
 def get_verifier(sid):
@@ -28,8 +30,20 @@ def get_verifier(sid):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index2.html")
 
+@app.route("/tool_gaurd/<mode>", methods=["GET", "POST"])
+def tool_gaurd(mode:str):
+    if mode=="set_gaurd":
+        tool_gaurd_needed.append(request.get_json().get("tools"))
+        return {"status":"done"},200
+    elif mode=="get_gaurd":
+        return {"tools":tool_gaurd_needed},200
+    elif mode=="set_available":
+        available_tools.append(request.get_json().get("tools"))
+        return {"status":"done"},200
+    else:
+        return {"tools": available_tools},200
 
 # ---- chat channel: user <-> agent -------------------------------------------
 @sock.route("/ws/chat")

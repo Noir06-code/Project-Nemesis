@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from langchain_core.tools import tool
 from ddgs import DDGS
 import subprocess
+import os
 
 @tool
 def system_command(command: str) -> str:
@@ -14,7 +15,7 @@ def system_command(command: str) -> str:
     MAX_CHARS = 10_000
     TIMEOUT = 60
     output = ""  # always defined, even if something goes wrong
-
+    
     try:
         result = subprocess.run(
             command,
@@ -43,10 +44,12 @@ def system_command(command: str) -> str:
 def web_search(query: str, max_results: int = 5) -> str:
     """Search the web and return a list of results (title, URL, snippet).
     Use this to find pages, then use web_fetch to read a page in full."""
-    try:
-        results = DDGS().text(query, max_results=max_results)
-    except Exception as e:
-        return f"Error searching: {e}"
+    for _ in range(3):
+        try:
+            results = DDGS().text(query, max_results=max_results)
+            break
+        except Exception as e:
+            return f"Error searching: {e}"
 
     if not results:
         return "No results found."
@@ -173,5 +176,4 @@ def web_fetch(url: str) -> str:
         return f"Extraction error: {e}"
 
 
-tools = [system_command]
-print(system_command.invoke({"command":"ngrok http 5000"}))
+tools = [system_command, web_fetch,web_search]
