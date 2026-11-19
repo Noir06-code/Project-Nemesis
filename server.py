@@ -13,8 +13,17 @@ except ImportError:
 
 app = Flask(__name__)
 sock = Sock(app)
-agent = Agent(tools=tools)  # your Agent class, unchanged
+agent: Agent = None
+agent_lock = threading.Lock()
 
+def get_agent():
+    global agent
+
+    with agent_lock:
+        if agent is None:
+            agent = Agent(tools=tools)
+
+    return agent
 sessions = {}
 sessions_lock = threading.Lock()
 tool_gaurd_needed=[]
@@ -22,6 +31,7 @@ available_tools=[]
 
 
 def get_verifier(sid):
+    get_agent()
     with sessions_lock:
         if sid not in sessions:
             sessions[sid] = Verifier()
@@ -30,20 +40,22 @@ def get_verifier(sid):
 
 @app.route("/")
 def index():
-    return render_template("index2.html")
+    get_agent()
+    return render_template("index3.html")
 
 @app.route("/tool_gaurd/<mode>", methods=["GET", "POST"])
 def tool_gaurd(mode:str):
     if mode=="set_gaurd":
-        tool_gaurd_needed.extend(request.get_json().get("tools"))
+        tool_gaurd_needed[:] = request.get_json().get("tools", [])
         return {"status":"done"},200
     elif mode=="get_gaurd":
         return {"tools":tool_gaurd_needed},200
     elif mode=="set_available":
-        available_tools.extend(request.get_json().get("tools"))
+        available_tools[:] = request.get_json().get("tools", [])
         return {"status":"done"},200
-    else:
+    elif mode=="get_available":
         return {"tools": available_tools},200
+    return {"error": "unknown mode"},404
 
 # ---- chat channel: user <-> agent -------------------------------------------
 @sock.route("/ws/chat")
@@ -65,7 +77,7 @@ def chat(ws):
         verifier.ai_rejected = False
         try:
             with use_verifier(verifier):
-                answer = agent.invoke(data["content"])
+                answer = get_agent().invoke(data["content"])
             if verifier.ai_rejected:
                 send({
                     "type": "info",
@@ -95,4 +107,4 @@ def verify(ws):
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, threaded=True)
+    app.run(host="127.0.0.1", port=5000, threaded=True, debug=True)

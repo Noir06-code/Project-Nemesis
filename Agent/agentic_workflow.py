@@ -231,7 +231,7 @@ def _apply_decision(msg, d):
 
 def VERIFICATION_NEEDED():
     data = requests.get("http://localhost:5000/tool_gaurd/get_gaurd")
-    return data.json().get("tools")
+    return {i for i in data.json().get("tools")}
 
 
 
@@ -256,22 +256,31 @@ def verified_add_messages(left, right):
             accepted.append(m)
             continue
 
-        # Allow AI messages containing only approved tool calls
-        if isinstance(m, AIMessage) and m.tool_calls:
-            tool_names = {tc["name"] for tc in m.tool_calls}
-
-            if not tool_names in VERIFICATION_NEEDED():
+        # Tool results: skip verification unless the tool is guarded
+        if isinstance(m, ToolMessage):
+            if {m.name}.isdisjoint(VERIFICATION_NEEDED()):
                 accepted.append(m)
                 continue
 
-        # Everything else requires verification
+        if isinstance(m, AIMessage):
+            # Plain text replies (no tool calls) are never verified
+            if not m.tool_calls:
+                accepted.append(m)
+                continue
+
+            # Tool calls: skip verification unless a guarded tool is involved
+            tool_names = {tc["name"] for tc in m.tool_calls}
+            if tool_names.isdisjoint(VERIFICATION_NEEDED()):
+                accepted.append(m)
+                continue
+
+        # Everything else (guarded tool calls and their results) requires verification
         out = _apply_decision(m, verifier.request(m))
 
         if out is not None:
             accepted.append(out)
 
     return add_messages(left, accepted)
-
 
 class State(TypedDict):
     messages: Annotated[list, verified_add_messages]
@@ -294,6 +303,7 @@ class Agent():
         self.llm = init_chat_model(model)
         self.llm_with_tools=self.llm.bind_tools(tools)
         set_tools(tools)
+        print("tool list is sent")
         chatbot=self.chatbot
         builder = StateGraph(State)
         builder.add_node(chatbot)
