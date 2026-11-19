@@ -8,7 +8,7 @@ from langchain_core.tools import tool
 from ddgs import DDGS
 import subprocess
 import os
-
+'''
 @tool
 def system_command(command: str) -> str:
     """Run a shell command on the system and return its output (stdout + stderr)."""
@@ -38,7 +38,7 @@ def system_command(command: str) -> str:
         output = output[:MAX_CHARS] + f"\n...[truncated, {len(output) - MAX_CHARS} more chars]"
     return output.strip()
 
-
+'''
 
 @tool
 def web_search(query: str, max_results: int = 5) -> str:
@@ -176,4 +176,4 @@ def web_fetch(url: str) -> str:
         return f"Extraction error: {e}"
 
 
-tools = [system_command, web_fetch,web_search]
+tools = [web_fetch,web_search]
