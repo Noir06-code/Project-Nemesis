@@ -2,57 +2,59 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
 <title>Project Nemesis</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
 <style>
   :root {
-    --bg: #f4f6f9; --surface: #ffffff; --line: #dde2ea; --text: #1b2433; --muted: #66738a;
-    --accent: #0f6e8c; --accent-ink: #ffffff; --accent-soft: #e3f1f6;
-    --ok: #17794a; --danger: #b3261e; --warn-bg: #fff6e0; --warn-line: #e6b94d;
-    --user-bg: #0f6e8c; --user-ink: #ffffff; --ai-bg: #eef1f6;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #11161f; --surface: #1a212d; --line: #2c3646; --text: #e6ebf3; --muted: #93a0b5;
-      --accent: #4cb4d3; --accent-ink: #08212b; --accent-soft: #1b3440;
-      --ok: #55c68a; --danger: #ff8a80; --warn-bg: #2b2412; --warn-line: #8a6d1f;
-      --user-bg: #2a8aa8; --user-ink: #ffffff; --ai-bg: #232c3a;
-    }
+    color-scheme: light;
+    --bg: #ffffff; --surface: #ffffff; --line: #e5e7eb; --text: #111827; --muted: #6b7280;
+    --accent: #0f6e8c; --accent-ink: #ffffff; --accent-soft: #e8f4f8;
+    --ok: #17794a; --danger: #b3261e; --warn-bg: #fffbeb; --warn-line: #f0d68a;
+    --user-bg: #0f6e8c; --user-ink: #ffffff; --ai-bg: #f3f4f6;
+    --field-bg: #f9fafb;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
-  body { background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; }
   .app { max-width: 780px; margin: 0 auto; padding: 24px 16px 40px; }
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
   h1 { font-size: 20px; margin: 0; font-weight: 600; }
   .status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: none; }
   .dot.on { background: var(--ok); }
-  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-  .panel > h2 { font-size: 14px; font-weight: 600; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(17,24,39,.06); }
+  .panel > h2 { font-size: 14px; font-weight: 600; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .badge { background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
-  #log { height: 70vh; min-height: 420px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-  .msg { max-width: 85%; padding: 9px 13px; border-radius: 12px; white-space: pre-wrap; word-break: break-word; }
+  #log { height: 70vh; height: 70dvh; min-height: 360px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
+  .msg { max-width: 85%; padding: 9px 13px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
   .msg.user { align-self: flex-end; background: var(--user-bg); color: var(--user-ink); border-bottom-right-radius: 3px; }
   .msg.assistant, .msg.ai { align-self: flex-start; background: var(--ai-bg); border-bottom-left-radius: 3px; }
   .msg.tool { align-self: flex-start; background: transparent; border: 1px dashed var(--line); color: var(--muted); font-size: 13px; }
-  .note { align-self: center; font-size: 12.5px; color: var(--muted); }
+  .note { align-self: center; font-size: 12.5px; color: var(--muted); text-align: center; }
   .note.error { color: var(--danger); }
-  .action { align-self: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; background: var(--surface); }
+  .typing { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; background: var(--ai-bg); padding: 12px 14px; border-radius: 12px; border-bottom-left-radius: 3px; }
+  .typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .4; animation: blink 1.2s infinite ease-in-out; }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+  @media (prefers-reduced-motion: reduce) { .typing span { animation: none; opacity: .7; } }
+  .action { align-self: flex-start; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; background: var(--surface); }
   .action b { font-weight: 600; }
   .action dl { margin: 4px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; color: var(--muted); }
-  .action dd { margin: 0; color: var(--text); word-break: break-word; }
-  #f { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
-  #in { flex: 1; }
+  .action dd { margin: 0; color: var(--text); overflow-wrap: anywhere; word-break: break-word; }
+  #f { display: flex; gap: 8px; padding: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface); }
+  #in { flex: 1; min-width: 0; }
   input[type=text], input[type=number], textarea, select {
-    font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line);
-    border-radius: 7px; padding: 8px 10px; width: 100%;
+    font: inherit; color: var(--text); background: var(--field-bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0;
   }
   textarea { resize: vertical; min-height: 72px; }
   input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  button { font: inherit; font-weight: 500; border-radius: 7px; border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 8px 14px; cursor: pointer; }
+  button { font: inherit; font-weight: 500; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 8px 14px; cursor: pointer; }
   button:hover { border-color: var(--accent); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
   button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   button.danger { color: var(--danger); }
   button.small { padding: 3px 9px; font-size: 13px; }
@@ -64,28 +66,59 @@
   .check { flex-direction: row; align-items: center; gap: 8px; }
   .check input { width: auto; }
   .tool-box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
-  .tool-box > .tool-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .tool-box > .tool-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .nest { border-left: 3px solid var(--accent-soft); padding-left: 10px; }
   .item { display: flex; gap: 6px; align-items: flex-start; margin-bottom: 8px; }
   .item > .body { flex: 1; min-width: 0; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
   .actions .spacer { flex: 1; }
   .head-actions { display: flex; align-items: center; gap: 10px; }
-  dialog#tools { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); padding: 0; width: min(480px, calc(100vw - 32px)); }
-  dialog#tools::backdrop { background: rgba(0,0,0,.45); }
+  dialog#tools { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); padding: 0; width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); box-shadow: 0 10px 30px rgba(17,24,39,.15); }
+  dialog#tools[open] { display: flex; flex-direction: column; }
+  dialog#tools::backdrop { background: rgba(17,24,39,.35); }
   .dlg-head { padding: 14px 16px; border-bottom: 1px solid var(--line); }
   .dlg-head h3 { margin: 0 0 2px; font-size: 16px; font-weight: 600; }
   .dlg-head p { margin: 0; color: var(--muted); font-size: 13px; }
-  .dlg-body { padding: 8px 16px; max-height: 50vh; overflow-y: auto; }
+  .dlg-body { padding: 8px 16px; flex: 1; overflow-y: auto; }
   .tool-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .tool-row:last-child { border-bottom: 0; }
-  .tool-row input { width: auto; }
-  .tool-row label { flex: 1; font-weight: 500; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px; cursor: pointer; }
-  .pill { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+  .tool-row input { width: auto; flex: none; }
+  .tool-row label { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 500; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px; cursor: pointer; }
+  .pill { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
   .pill.off { background: transparent; border: 1px solid var(--line); color: var(--muted); font-weight: 500; }
-  .dlg-foot { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
-  .dlg-foot .msg-line { flex: 1; font-size: 13px; color: var(--muted); }
+  .dlg-foot { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .dlg-foot .msg-line { flex: 1 1 100%; font-size: 13px; color: var(--muted); }
+  .dlg-foot .msg-line:empty { display: none; }
   .dlg-foot .msg-line.error { color: var(--danger); }
+  .dlg-foot button { flex: 1 1 auto; }
+
+  /* ---------- responsive ---------- */
+  @media (min-width: 560px) {
+    .dlg-foot .msg-line { flex: 1; }
+    .dlg-foot button { flex: none; }
+  }
+  @media (max-width: 640px) {
+    .app { padding: 12px 10px 24px; }
+    h1 { font-size: 18px; }
+    #log { height: calc(100dvh - 190px); min-height: 300px; padding: 12px; }
+    .msg { max-width: 92%; }
+    .panel { border-radius: 10px; }
+    /* 16px stops iOS Safari from zooming on focus */
+    input[type=text], input[type=number], textarea, select { font-size: 16px; }
+    .card { padding: 12px; }
+    .actions { flex-direction: column; }
+    .actions .spacer { display: none; }
+    .actions button { width: 100%; padding: 10px 14px; }
+    .item { flex-direction: column; }
+    .item > .body { width: 100%; }
+    .action dl { grid-template-columns: 1fr; gap: 0; }
+    .action dd { margin-bottom: 4px; }
+  }
+  @media (max-width: 380px) {
+    .panel > h2 { padding: 10px 12px; }
+    #f { padding-left: 8px; padding-right: 8px; }
+    #f button { padding: 8px 10px; }
+  }
 </style>
 </head>
 <body>
@@ -275,13 +308,37 @@ function buildField(value, label, onRemove) {
 }
 
 /* ---------- chat (already verified messages) ---------- */
+/* ---------- typing indicator ---------- */
+let busy = false;       // true from sending a message until the agent is "done"
+let awaitingYou = 0;    // open proposal cards waiting for the user
+let typingEl = null;
+function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+function showTyping() {
+  if (!busy || awaitingYou > 0) return hideTyping();
+  if (!typingEl) {
+    typingEl = el("div", "typing");
+    typingEl.setAttribute("role", "status");
+    typingEl.setAttribute("aria-label", "Agent is typing");
+    typingEl.append(el("span"), el("span"), el("span"));
+  }
+  log.appendChild(typingEl);   // re-append keeps it last
+  scroll();
+}
+chat.addEventListener("close", () => { busy = false; hideTyping(); });
+
 chat.onmessage = (e) => {
   const m = JSON.parse(e.data);
-  if (m.type === "done") return addNote("", "Finished");
-  if (m.type === "info" || m.type === "error") return addNote(m.type, m.content);
+  hideTyping();
+  if (m.type === "done") { busy = false; return addNote("", "Finished"); }
+  if (m.type === "info" || m.type === "error") {
+    if (m.type === "error") busy = false;
+    addNote(m.type, m.content);
+    return showTyping();
+  }
   if (m.content) addMsg(m.role === "tool" ? "tool" : m.role, m.content);
   (m.tool_calls || []).forEach(addAction);
   scroll();
+  showTyping();
 };
 
 document.getElementById("f").onsubmit = (e) => {
@@ -291,6 +348,8 @@ document.getElementById("f").onsubmit = (e) => {
   addMsg("user", t);
   chat.send(JSON.stringify({ type: "user_message", content: t }));
   input.value = "";
+  busy = true;
+  showTyping();
 };
 
 /* ---------- manage tools (guard list) ---------- */
@@ -376,6 +435,8 @@ ver.onmessage = (e) => {
   const p = JSON.parse(e.data);
   if (p.type !== "proposal") return;
 
+  awaitingYou++;
+  hideTyping();   // the ball is in the user's court
   const card = el("div", "card");
   card.append(el("h3", "", (roleLabel[p.role] || pretty(p.role)) + (p.name ? ` · ${pretty(p.name)}` : "")));
   card.append(el("p", "hint", "Please review before this is sent. You can change anything below."));
@@ -419,7 +480,9 @@ ver.onmessage = (e) => {
     ver.send(JSON.stringify(out));
     const done = { approve: "Approved", edit: "Sent with your changes", reject: "Rejected" }[type];
     card.replaceWith(el("div", "note", done));
+    awaitingYou = Math.max(0, awaitingYou - 1);
     scroll();
+    showTyping();   // agent resumes after your decision
   };
 
   const bar = el("div", "actions");
