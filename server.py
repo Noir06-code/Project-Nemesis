@@ -35,12 +35,12 @@ def index():
 @app.route("/tool_gaurd/<mode>", methods=["GET", "POST"])
 def tool_gaurd(mode:str):
     if mode=="set_gaurd":
-        tool_gaurd_needed.append(request.get_json().get("tools"))
+        tool_gaurd_needed.extend(request.get_json().get("tools"))
         return {"status":"done"},200
     elif mode=="get_gaurd":
         return {"tools":tool_gaurd_needed},200
     elif mode=="set_available":
-        available_tools.append(request.get_json().get("tools"))
+        available_tools.extend(request.get_json().get("tools"))
         return {"status":"done"},200
     else:
         return {"tools": available_tools},200
