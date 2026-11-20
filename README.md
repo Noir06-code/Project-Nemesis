@@ -1,108 +1,103 @@
-# Project Nemesis
+# Project Nemesis · Multi-Agent & AgentOps Studio
 
-A human-in-the-loop AI agent with a web chat UI. The agent can search the web, fetch pages and run shell commands, but **you decide which tools need your approval** before they run. Anything guarded is shown to you in the browser, where you can approve it, edit it or reject it.
+A human-in-the-loop multi-agent execution platform and AgentOps observability tool. Users can **register custom agents** by assigning a name, task (system prompt), and available tools, run multiple agents concurrently, inspect execution traces, and verify guarded tool calls in real time.
 
-Built with Flask, WebSockets, LangGraph and Gemini.
+Built with **Flask**, **WebSockets**, **LangGraph**, and **Gemini**.
 
-## Features
+---
 
-- **Chat UI** in the browser (`templates/index3.html`), with live status and tool-call display
-- **Approval cards** for guarded actions: approve, edit the arguments, or reject
-- **Manage tools** button: pick which tools are guarded, live, without a restart
-- **Built-in tools**
-  - `web_search`: web search via DuckDuckGo
-  - `web_fetch`: reads a page as text, with protection against private and local addresses (SSRF)
-  - `system_command`: runs a shell command (60 s timeout, output capped)
-- **Per-session approvals** that survive the agent's multi-step reasoning, with a 10-minute auto-reject
-- Optional MCP integration (`Agent/agentic_workflow_with_mcp.py`, `main_server.py`)
+## Key Features
 
-## How it works
+1. **Multi-Agent Registration & Management**:
+   - Register new agents with a **Name**, **Task (System Prompt)**, and **Assigned Tools**.
+   - Custom model assignment (e.g. `google_genai:gemini-2.5-flash-lite`, `google_genai:gemini-2.5-flash`, etc.).
+   - Edit, delete, and switch between agents seamlessly on the fly.
+   - Persistent storage in `data/agents.json`.
+
+2. **AgentOps Observability & Tracing**:
+   - Platform metrics: Active agents, total runs, tool calls count, human approval stats.
+   - Granular execution run traces: input prompt, tool calls, human interventions, latency, tool output, and final agent response.
+   - Step-by-step trace inspection modal in the dashboard.
+
+3. **Human-in-the-Loop Tool Guarding**:
+   - Guard sensitive tools (e.g., `system_command`) so they require human approval before execution.
+   - Interactive verification cards in the chat UI:
+     - **Approve**: Run tool as requested.
+     - **Edit & Send**: Modify tool arguments before execution.
+     - **Reject**: Cancel tool call and inform the agent.
+
+4. **Extensible Tool Registry**:
+   - `web_search`: DuckDuckGo real-time web search.
+   - `web_fetch`: SSRF-protected webpage content extractor.
+   - `system_command`: Run shell commands with timeout and output limits (default guarded).
+   - `calculator`: Safe mathematical evaluator.
+   - `save_note`: Save findings and key notes into memory.
+   - `read_notes`: Retrieve and search saved notes.
+
+---
+
+## Project Structure
 
 ```
-Browser ──/ws/chat────▶ Flask ──▶ LangGraph agent (Gemini + tools)
-   ▲                                      │
-   └────/ws/verify◀── approval request ◀──┘   (blocks until you answer)
+├── Agent/
+│   ├── agent_manager.py       # Multi-agent registry, CRUD, persistence, lifecycle
+│   ├── agentops.py            # AgentOps observability, execution tracing, metrics
+│   ├── agentic_workflow.py    # LangGraph agent, verifier, verified_add_messages reducer
+│   └── agentic_workflow_with_mcp.py  # Optional MCP client variant
+├── Tools/
+│   └── tools.py               # Tool registry (web_search, system_command, calculator, etc.)
+├── templates/
+│   └── index3.html            # Multi-agent dashboard, Chat UI, AgentOps traces, Tool guards
+├── data/                      # Persistent storage (agents, runs, stats, notes)
+├── server.py                  # Flask + WebSocket server, REST APIs for agents, tools, runs
+├── requirements.txt
+└── README.md
 ```
 
-1. You send a message over `/ws/chat`.
-2. The agent decides what to do and may call tools.
-3. Every message goes through a reducer (`verified_add_messages`). Depending on the rules below, it either lets the message through or pauses and sends an approval card over `/ws/verify`.
-4. Your answer (approve, edit or reject) decides what the agent sees next.
+---
 
-### What needs approval
+## Quick Start
 
-| Message | Verified? |
-|---|---|
-| Your messages | No |
-| Agent's plain text replies | No |
-| Calls to unguarded tools, and their results | No |
-| Calls to **guarded** tools, and their results | **Yes** |
-
-The guard list is edited in the UI (**Manage tools**) and is read fresh on every message. It starts empty, so tick `system_command` before using the agent on a machine you care about.
-
-## Quick start
-
+### 1. Setup Environment
 ```bash
-git clone https://github.com/Noir06-code/Project-Nemesis.git
-cd Project-Nemesis
-
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
-echo "GOOGLE_API_KEY=your-key-here" > .env
-
-python server.py            # http://localhost:5000
 ```
 
-## Configuration
+### 2. Configure API Key
+Create `.env` file:
+```env
+GOOGLE_API_KEY=your-gemini-api-key
+PORT=5000
+```
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `GOOGLE_API_KEY` | none (required) | Gemini API key, read from the environment or `.env` |
-| `HOST` | `0.0.0.0` | Interface to listen on |
-| `PORT` | `5000` | Port to listen on |
-| `FLASK_DEBUG` | `0` | Set to `1` for the dev reloader, local use only |
-
-The model is set in `Agent/agentic_workflow.py` (default `google_genai:gemini-2.5-flash`).
-
-## Deployment
-
+### 3. Run Server
 ```bash
-gunicorn -w 1 --threads 100 -b 0.0.0.0:$PORT server:app
+python3 server.py
 ```
+Open **http://localhost:5000** in your browser.
 
-(this is what the included `Procfile` runs)
+---
 
-- **Use one worker.** Sessions, pending approvals and the guard list live in memory. Scale with threads, not processes.
-- **Allow WebSocket upgrades** for `/ws/chat` and `/ws/verify` on your proxy, with a long read timeout (approvals can wait up to 10 minutes).
-- Serve over **HTTPS**. The page uses `wss://` automatically, and browsers only provide `crypto.randomUUID()` on secure origins.
-- Set `GOOGLE_API_KEY` as an environment variable on the host. Do not commit `.env`.
+## REST API Reference
 
-## Project structure
+### Agents API
+- `GET /api/agents` - List all registered agents.
+- `POST /api/agents` - Register a new agent (`{ "name": "...", "task": "...", "tools": ["web_search", ...], "model": "..." }`).
+- `GET /api/agents/<agent_id>` - Get agent details.
+- `PUT /api/agents/<agent_id>` - Update agent name, task, tools, or model.
+- `DELETE /api/agents/<agent_id>` - Delete an agent.
+- `POST /api/agents/<agent_id>/run` - Run an agent synchronously on a prompt (`{ "prompt": "..." }`).
 
-```
-server.py                  Flask app, WebSocket routes, guard-list API
-shared.py                  In-process guard and tool lists shared by server and agent
-Agent/
-  agentic_workflow.py      LangGraph agent, verifier, verified_add_messages reducer
-  agentic_workflow_with_mcp.py   Variant with MCP servers (optional)
-Tools/tools.py             system_command, web_search, web_fetch
-templates/index3.html      Chat UI and approval cards
-main_server.py             Standalone MCP server example (optional)
-```
+### Tools & Guards API
+- `GET /api/tools` - List all available tools and their guard statuses.
+- `POST /api/tools/guard` - Set guarded tools (`{ "tools": ["system_command", ...] }`).
 
-## Add your own tool
+### AgentOps Observability API
+- `GET /api/stats` - Platform metrics (agents, runs, tool calls, approvals).
+- `GET /api/runs` - List recent execution runs.
+- `GET /api/runs/<run_id>` - Get detailed execution trace with step events.
 
-Add a function with the `@tool` decorator in `Tools/tools.py` and include it in the `tools` list. It appears in **Manage tools** on the next start, where you can guard it.
-
-## Security notes
-
-- `system_command` runs arbitrary shell commands as the user running the server. Guard it, and run the app in a container or low-privilege account when deploying.
-- The app has no login. Put it behind authentication before exposing it to the internet.
-- `web_fetch` refuses localhost, private IPs and redirects, but treat fetched page content as untrusted input to the model.
-
-## Roadmap
-
-- Tool retrieval for large tool sets
-- Dynamic system prompts and skills
-- Reconnect and session resume in the UI
+### WebSockets
+- `/ws/chat?sid=<sid>&agent_id=<agent_id>` - Interactive chat with active agent.
+- `/ws/verify?sid=<sid>` - Human-in-the-loop verification channel.

@@ -4,497 +4,1915 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>Project Nemesis</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<title>Nemesis · Multi-Agent & AgentOps Studio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
   :root {
     color-scheme: light;
-    --bg: #ffffff; --surface: #ffffff; --line: #e5e7eb; --text: #111827; --muted: #6b7280;
-    --accent: #0f6e8c; --accent-ink: #ffffff; --accent-soft: #e8f4f8;
-    --ok: #17794a; --danger: #b3261e; --warn-bg: #fffbeb; --warn-line: #f0d68a;
-    --user-bg: #0f6e8c; --user-ink: #ffffff; --ai-bg: #f3f4f6;
-    --field-bg: #f9fafb;
+    --bg: #f8fafc; --surface: #ffffff; --line: #e2e8f0; --text: #0f172a; --muted: #64748b;
+    --accent: #0284c7; --accent-hover: #0369a1; --accent-ink: #ffffff; --accent-soft: #e0f2fe;
+    --ok: #16a34a; --ok-soft: #dcfce7;
+    --danger: #dc2626; --danger-soft: #fee2e2;
+    --warn-bg: #fffbeb; --warn-line: #fde68a; --warn-text: #b45309;
+    --user-bg: #0284c7; --user-ink: #ffffff; --ai-bg: #f8fafc;
+    --field-bg: #ffffff;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
   }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body { background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; }
-  .app { max-width: 780px; margin: 0 auto; padding: 24px 16px 40px; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-  h1 { font-size: 20px; margin: 0; font-weight: 600; }
-  .status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: none; }
-  .dot.on { background: var(--ok); }
-  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(17,24,39,.06); }
-  .panel > h2 { font-size: 14px; font-weight: 600; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  .badge { background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
-  #log { height: 70vh; height: 70dvh; min-height: 360px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
-  .msg { max-width: 85%; padding: 9px 13px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
-  .msg.user { align-self: flex-end; background: var(--user-bg); color: var(--user-ink); border-bottom-right-radius: 3px; }
-  .msg.assistant, .msg.ai { align-self: flex-start; background: var(--ai-bg); border-bottom-left-radius: 3px; }
-  .msg.tool { align-self: flex-start; background: transparent; border: 1px dashed var(--line); color: var(--muted); font-size: 13px; }
-  .note { align-self: center; font-size: 12.5px; color: var(--muted); text-align: center; }
-  .note.error { color: var(--danger); }
-  .typing { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; background: var(--ai-bg); padding: 12px 14px; border-radius: 12px; border-bottom-left-radius: 3px; }
-  .typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .4; animation: blink 1.2s infinite ease-in-out; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14.5px/1.5 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .app-layout {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 14px 40px;
+  }
+
+  /* ---------- Header & Navigation ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0284c7, #0f172a);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(2,132,199,0.25);
+  }
+  .brand-text h1 {
+    font-size: 18px;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .brand-text p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.2;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .conn-badge {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    font-weight: 500;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--danger);
+    flex-shrink: 0;
+  }
+  .dot.on {
+    background: var(--ok);
+    box-shadow: 0 0 6px rgba(22,163,74,0.4);
+  }
+
+  /* Navigation Tabs */
+  .nav-tabs-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-bottom: 20px;
+    padding-bottom: 2px;
+  }
+  .nav-tabs-wrap::-webkit-scrollbar {
+    display: none;
+  }
+  .nav-tabs {
+    display: flex;
+    gap: 6px;
+    background: #e2e8f0;
+    padding: 5px;
+    border-radius: 12px;
+    min-width: max-content;
+  }
+  .tab-btn {
+    flex: 1 0 auto;
+    padding: 8px 16px;
+    border: 0;
+    background: transparent;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    min-height: 38px;
+  }
+  .tab-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+  .tab-btn:hover:not(.active) {
+    color: var(--text);
+  }
+
+  .tab-content {
+    display: none;
+    animation: fadeIn 0.15s ease;
+  }
+  .tab-content.active {
+    display: block;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Buttons & Inputs ---------- */
+  button {
+    font: inherit;
+    font-weight: 500;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text);
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 38px;
+    user-select: none;
+  }
+  button:hover {
+    border-color: var(--accent);
+  }
+  button:active {
+    transform: scale(0.98);
+  }
+  button:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+    transform: none;
+  }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  button.primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+  button.danger {
+    color: var(--danger);
+  }
+  button.danger:hover {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+  }
+  button.small {
+    padding: 4px 10px;
+    font-size: 12.5px;
+    min-height: 30px;
+    border-radius: 6px;
+  }
+
+  input[type=text], input[type=number], textarea, select {
+    font: inherit;
+    color: var(--text);
+    background: var(--field-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 100%;
+    min-width: 0;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  /* Badges & Pills */
+  .badge {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.4;
+  }
+  .badge.green { background: var(--ok-soft); color: var(--ok); }
+  .badge.gray { background: #f1f5f9; color: var(--muted); border: 1px solid var(--line); }
+  .badge.red { background: var(--danger-soft); color: var(--danger); }
+
+  /* Section Headings */
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .section-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .section-desc {
+    margin: 3px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  /* ---------- TAB 1: Agents Studio Grid ---------- */
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 16px;
+  }
+  .agent-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .agent-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: var(--shadow-md);
+  }
+  .agent-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .agent-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .agent-task {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 8px 0 14px;
+    line-height: 1.45;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+  .agent-tools-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .agent-tools-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 16px;
+  }
+  .agent-card-foot {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .agent-card-foot .card-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* ---------- TAB 2: Chat & Execution ---------- */
+  .chat-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .chat-topbar {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-sm);
+  }
+  .active-agent-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .active-agent-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: bold;
+    flex-shrink: 0;
+  }
+  .active-agent-text {
+    min-width: 0;
+  }
+  .active-agent-title {
+    font-weight: 700;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .active-agent-sub {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chat-topbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .chat-topbar-controls label {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .chat-topbar-controls select {
+    width: auto;
+    font-size: 13px;
+    padding: 6px 12px;
+    min-height: 34px;
+  }
+
+  .chat-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+  }
+  #log {
+    height: calc(100vh - 310px);
+    height: calc(100dvh - 310px);
+    min-height: 380px;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #fafafa;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .msg {
+    max-width: 82%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+    font-size: 14.5px;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: var(--user-bg);
+    color: var(--user-ink);
+    border-bottom-right-radius: 3px;
+    box-shadow: 0 1px 2px rgba(2,132,199,0.2);
+  }
+  .msg.ai {
+    align-self: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-bottom-left-radius: 3px;
+    box-shadow: var(--shadow-sm);
+  }
+  .msg-agent-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+    letter-spacing: 0.03em;
+  }
+  .note {
+    align-self: center;
+    font-size: 12.5px;
+    color: var(--muted);
+    text-align: center;
+    padding: 4px 10px;
+    border-radius: 99px;
+  }
+  .note.error {
+    color: var(--danger);
+    background: var(--danger-soft);
+    font-weight: 600;
+  }
+
+  .typing {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 10px 14px;
+    border-radius: 12px;
+    border-bottom-left-radius: 3px;
+    box-shadow: var(--shadow-sm);
+  }
+  .typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: .4;
+    animation: blink 1.2s infinite ease-in-out;
+  }
   .typing span:nth-child(2) { animation-delay: .2s; }
   .typing span:nth-child(3) { animation-delay: .4s; }
   @keyframes blink { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
-  @media (prefers-reduced-motion: reduce) { .typing span { animation: none; opacity: .7; } }
-  .action { align-self: flex-start; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; background: var(--surface); }
-  .action b { font-weight: 600; }
-  .action dl { margin: 4px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; color: var(--muted); }
-  .action dd { margin: 0; color: var(--text); overflow-wrap: anywhere; word-break: break-word; }
-  #f { display: flex; gap: 8px; padding: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface); }
-  #in { flex: 1; min-width: 0; }
-  input[type=text], input[type=number], textarea, select {
-    font: inherit; color: var(--text); background: var(--field-bg); border: 1px solid var(--line);
-    border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0;
-  }
-  textarea { resize: vertical; min-height: 72px; }
-  input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  button { font: inherit; font-weight: 500; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 8px 14px; cursor: pointer; }
-  button:hover { border-color: var(--accent); }
-  button:disabled { opacity: .55; cursor: not-allowed; }
-  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-  button.danger { color: var(--danger); }
-  button.small { padding: 3px 9px; font-size: 13px; }
-  .card { align-self: stretch; border: 1px solid var(--warn-line); background: var(--warn-bg); border-radius: 10px; padding: 14px; }
-  .card h3 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
-  .card .hint { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
-  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-  .field > label { font-size: 13px; font-weight: 500; }
-  .check { flex-direction: row; align-items: center; gap: 8px; }
-  .check input { width: auto; }
-  .tool-box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
-  .tool-box > .tool-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .nest { border-left: 3px solid var(--accent-soft); padding-left: 10px; }
-  .item { display: flex; gap: 6px; align-items: flex-start; margin-bottom: 8px; }
-  .item > .body { flex: 1; min-width: 0; }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-  .actions .spacer { flex: 1; }
-  .head-actions { display: flex; align-items: center; gap: 10px; }
-  dialog#tools { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); padding: 0; width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); box-shadow: 0 10px 30px rgba(17,24,39,.15); }
-  dialog#tools[open] { display: flex; flex-direction: column; }
-  dialog#tools::backdrop { background: rgba(17,24,39,.35); }
-  .dlg-head { padding: 14px 16px; border-bottom: 1px solid var(--line); }
-  .dlg-head h3 { margin: 0 0 2px; font-size: 16px; font-weight: 600; }
-  .dlg-head p { margin: 0; color: var(--muted); font-size: 13px; }
-  .dlg-body { padding: 8px 16px; flex: 1; overflow-y: auto; }
-  .tool-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
-  .tool-row:last-child { border-bottom: 0; }
-  .tool-row input { width: auto; flex: none; }
-  .tool-row label { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 500; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px; cursor: pointer; }
-  .pill { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
-  .pill.off { background: transparent; border: 1px solid var(--line); color: var(--muted); font-weight: 500; }
-  .dlg-foot { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .dlg-foot .msg-line { flex: 1 1 100%; font-size: 13px; color: var(--muted); }
-  .dlg-foot .msg-line:empty { display: none; }
-  .dlg-foot .msg-line.error { color: var(--danger); }
-  .dlg-foot button { flex: 1 1 auto; }
 
-  /* ---------- responsive ---------- */
-  @media (min-width: 560px) {
-    .dlg-foot .msg-line { flex: 1; }
-    .dlg-foot button { flex: none; }
+  .action-box {
+    align-self: flex-start;
+    max-width: 90%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
   }
+  .action-box b {
+    color: var(--accent);
+  }
+  .action-box dl {
+    margin: 6px 0 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 12px;
+    color: var(--muted);
+  }
+  .action-box dd {
+    margin: 0;
+    color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  /* Human-in-the-Loop Verification Card */
+  .card.guard-card {
+    align-self: stretch;
+    border: 2px solid var(--warn-line);
+    background: var(--warn-bg);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 4px 0;
+    box-shadow: 0 2px 6px rgba(180,83,9,0.08);
+  }
+  .card.guard-card h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--warn-text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card.guard-card .hint {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .tool-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .tool-box > .tool-title {
+    font-weight: 600;
+    font-size: 13.5px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .guard-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  #f {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    align-items: center;
+  }
+  #in {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ---------- TAB 3: AgentOps Observability ---------- */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-label {
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .stat-sub {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Responsive Table Wrappers */
+  .table-responsive-wrap {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+  table.runs-table {
+    width: 100%;
+    min-width: 660px;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  table.runs-table th {
+    background: #f8fafc;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+  table.runs-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+  table.runs-table tr:last-child td {
+    border-bottom: 0;
+  }
+  table.runs-table tr:hover {
+    background: #f8fafc;
+  }
+
+  /* ---------- TAB 4: Tool Registry & Guard Settings ---------- */
+  table.tools-table {
+    width: 100%;
+    min-width: 580px;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  table.tools-table th {
+    background: #f8fafc;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+  table.tools-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+  table.tools-table tr:last-child td {
+    border-bottom: 0;
+  }
+
+  /* Toggle Switch */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #cbd5e1; transition: .2s; border-radius: 24px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+    background-color: white; transition: .2s; border-radius: 50%;
+  }
+  input:checked + .slider { background-color: var(--warn-text); }
+  input:checked + .slider:before { transform: translateX(20px); }
+
+  /* Modals */
+  dialog {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--text);
+    padding: 0;
+    width: min(600px, calc(100vw - 24px));
+    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
+    box-shadow: 0 20px 40px rgba(15,23,42,.22);
+    margin: auto;
+  }
+  dialog::backdrop {
+    background: rgba(15,23,42,.5);
+    backdrop-filter: blur(2px);
+  }
+  .dlg-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .dlg-head h3 {
+    margin: 0 0 2px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .dlg-head p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .dlg-body {
+    padding: 16px 20px;
+    max-height: 65vh;
+    max-height: 65dvh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .dlg-foot {
+    padding: 14px 20px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    background: #fafafa;
+    flex-wrap: wrap;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .form-group .hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0;
+  }
+  .tools-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .tool-checkbox-item {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+  .tool-checkbox-item:hover {
+    border-color: var(--accent);
+    background: #f8fafc;
+  }
+  .tool-checkbox-item input {
+    margin-top: 3px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .tool-checkbox-title {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tool-checkbox-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    line-height: 1.35;
+  }
+
+  /* Trace Events Timeline */
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .timeline-item {
+    border-left: 2px solid var(--accent);
+    padding-left: 14px;
+    margin-left: 6px;
+    position: relative;
+  }
+  .timeline-item::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    position: absolute;
+    left: -5px;
+    top: 4px;
+  }
+  .timeline-time {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .timeline-event {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .timeline-data {
+    background: #f1f5f9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-top: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* ========================================================================= */
+  /* RESPONSIVE MEDIA QUERIES (FOR ALL DEVICES)                                */
+  /* ========================================================================= */
+
+  /* Tablets & Medium Screens (<= 860px) */
+  @media (max-width: 860px) {
+    .app-layout {
+      padding: 14px 12px 32px;
+    }
+    .agents-grid {
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+      gap: 12px;
+    }
+    .stat-card {
+      padding: 14px;
+    }
+    .stat-value {
+      font-size: 22px;
+    }
+  }
+
+  /* Mobile Screens (<= 640px) */
   @media (max-width: 640px) {
-    .app { padding: 12px 10px 24px; }
-    h1 { font-size: 18px; }
-    #log { height: calc(100dvh - 190px); min-height: 300px; padding: 12px; }
-    .msg { max-width: 92%; }
-    .panel { border-radius: 10px; }
-    /* 16px stops iOS Safari from zooming on focus */
-    input[type=text], input[type=number], textarea, select { font-size: 16px; }
-    .card { padding: 12px; }
-    .actions { flex-direction: column; }
-    .actions .spacer { display: none; }
-    .actions button { width: 100%; padding: 10px 14px; }
-    .item { flex-direction: column; }
-    .item > .body { width: 100%; }
-    .action dl { grid-template-columns: 1fr; gap: 0; }
-    .action dd { margin-bottom: 4px; }
+    .app-layout {
+      padding: 12px 10px 24px;
+    }
+    header {
+      margin-bottom: 12px;
+      gap: 8px;
+    }
+    .brand-text h1 {
+      font-size: 17px;
+    }
+    .brand-text p {
+      display: none; /* Hide subtitle on small phones to save space */
+    }
+    .header-right {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    /* 16px font-size prevents iOS Safari from zooming inputs on focus */
+    input[type=text], input[type=number], textarea, select {
+      font-size: 16px;
+    }
+
+    /* Chat layout adjustments */
+    .chat-topbar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .chat-topbar-controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .chat-topbar-controls select {
+      flex: 1;
+      max-width: 200px;
+    }
+    #log {
+      height: calc(100vh - 300px);
+      height: calc(100dvh - 300px);
+      min-height: 320px;
+      padding: 12px;
+    }
+    .msg {
+      max-width: 90%;
+      font-size: 14px;
+      padding: 9px 12px;
+    }
+    .action-box {
+      max-width: 100%;
+    }
+    .action-box dl {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+    .action-box dd {
+      margin-bottom: 4px;
+    }
+
+    /* Guard Action buttons on mobile */
+    .guard-actions {
+      flex-direction: column;
+    }
+    .guard-actions button {
+      width: 100%;
+      min-height: 42px;
+    }
+
+    /* Chat Input Bar safe area on iPhone */
+    #f {
+      padding: 10px 12px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    }
+    #f button {
+      min-height: 40px;
+      padding: 8px 16px;
+    }
+
+    /* Agent cards stack into clean 1-column on mobile */
+    .agents-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .agent-card {
+      padding: 16px;
+    }
+    .agent-card-foot {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .agent-card-foot .card-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+    .agent-card-foot .card-actions button {
+      min-height: 34px;
+      justify-content: center;
+    }
+
+    /* Stats on mobile */
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .stat-card {
+      padding: 12px;
+    }
+    .stat-value {
+      font-size: 20px;
+    }
+    .stat-sub {
+      font-size: 11px;
+    }
+
+    /* Modals on mobile */
+    dialog {
+      width: calc(100vw - 16px);
+      max-height: calc(100vh - 20px);
+      max-height: calc(100dvh - 20px);
+      border-radius: 12px;
+    }
+    .dlg-head {
+      padding: 14px 16px;
+    }
+    .dlg-body {
+      padding: 14px 16px;
+      max-height: calc(100dvh - 140px);
+    }
+    .dlg-foot {
+      padding: 12px 16px;
+    }
+    .dlg-foot button {
+      flex: 1;
+      min-height: 42px;
+    }
+    .tools-checkbox-grid {
+      grid-template-columns: 1fr;
+    }
   }
+
+  /* Extra Small Devices (<= 380px) */
   @media (max-width: 380px) {
-    .panel > h2 { padding: 10px 12px; }
-    #f { padding-left: 8px; padding-right: 8px; }
-    #f button { padding: 8px 10px; }
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+    .chat-topbar-controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .chat-topbar-controls select {
+      max-width: 100%;
+    }
   }
 </style>
 </head>
 <body>
-<div class="app">
+
+<div class="app-layout">
+  <!-- Top App Header -->
   <header>
-    <h1>Project Nemesis</h1>
-    <div class="status"><span class="dot" id="dot"></span><span id="stat">Connecting…</span></div>
+    <div class="brand">
+      <div class="brand-logo">⚡</div>
+      <div class="brand-text">
+        <h1>Nemesis AgentOps</h1>
+        <p>Human-in-the-Loop Multi-Agent Execution Platform</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="conn-badge">
+        <span class="dot" id="dot"></span>
+        <span id="stat">Connecting...</span>
+      </div>
+      <button class="small" id="refreshAllBtn">↻ Refresh</button>
+    </div>
   </header>
 
-  <div>
-    <section class="panel">
-      <h2>
-        <span>Conversation</span>
-        <span class="head-actions">
-          <button type="button" class="small" id="manageTools" aria-haspopup="dialog">Manage tools</button>
-        </span>
-      </h2>
-      <div id="log" aria-live="polite"></div>
-      <form id="f">
-        <input type="text" id="in" autocomplete="off" placeholder="Message the agent" aria-label="Message">
-        <button class="primary">Send</button>
-      </form>
-    </section>
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs-wrap">
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="agentsTab">🤖 Agents (<span id="agentCountBadge">3</span>)</button>
+      <button class="tab-btn" data-tab="chatTab">💬 Interactive Chat</button>
+      <button class="tab-btn" data-tab="agentopsTab">📊 AgentOps Observability</button>
+      <button class="tab-btn" data-tab="toolsTab">🛡️ Tool Guards (<span id="guardCountBadge">1</span>)</button>
+    </nav>
+  </div>
 
+  <!-- ========================================================================= -->
+  <!-- TAB 1: AGENTS REGISTRY & STUDIO                                           -->
+  <!-- ========================================================================= -->
+  <div class="tab-content active" id="agentsTab">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Agent Registry</h2>
+        <p class="section-desc">Create, register, and configure autonomous agents with custom tasks (system prompts) and tool allocations.</p>
+      </div>
+      <button class="primary" id="openRegisterAgentBtn">+ Register Agent</button>
+    </div>
+
+    <div class="agents-grid" id="agentsGrid">
+      <!-- Dynamic Agent Cards -->
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: INTERACTIVE CHAT & HUMAN-IN-THE-LOOP                               -->
+  <!-- ========================================================================= -->
+  <div class="tab-content" id="chatTab">
+    <div class="chat-layout">
+      <div class="chat-topbar">
+        <div class="active-agent-info">
+          <div class="active-agent-icon" id="chatAgentIcon">A</div>
+          <div class="active-agent-text">
+            <div class="active-agent-title" id="chatAgentName">Select Agent</div>
+            <div class="active-agent-sub" id="chatAgentTools">Loading tools...</div>
+          </div>
+        </div>
+        <div class="chat-topbar-controls">
+          <label>Switch Agent:</label>
+          <select id="agentSelectDropdown"></select>
+        </div>
+      </div>
+
+      <div class="chat-panel">
+        <div id="log" aria-live="polite"></div>
+        <form id="f">
+          <input type="text" id="in" autocomplete="off" placeholder="Message the active agent..." aria-label="Message">
+          <button class="primary" type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: AGENTOPS OBSERVABILITY & TRACING                                   -->
+  <!-- ========================================================================= -->
+  <div class="tab-content" id="agentopsTab">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">AgentOps Dashboard & Tracing</h2>
+        <p class="section-desc">Monitor multi-agent execution runs, step-by-step traces, tool executions, and human verification decisions.</p>
+      </div>
+      <button class="small" id="refreshRunsBtn">↻ Refresh Runs</button>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Active Agents</div>
+        <div class="stat-value" id="statTotalAgents">3</div>
+        <div class="stat-sub">Registered & operational</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Execution Runs</div>
+        <div class="stat-value" id="statTotalRuns">0</div>
+        <div class="stat-sub">Tracked executions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tool Calls Tracked</div>
+        <div class="stat-value" id="statTotalTools">0</div>
+        <div class="stat-sub">Executed by agents</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Human Approvals</div>
+        <div class="stat-value" id="statApprovals">0</div>
+        <div class="stat-sub" id="statApprovalsSub">0 approved · 0 rejected</div>
+      </div>
+    </div>
+
+    <!-- Runs Table -->
+    <div class="table-responsive-wrap">
+      <table class="runs-table">
+        <thead>
+          <tr>
+            <th>Run ID & Time</th>
+            <th>Agent</th>
+            <th>Prompt</th>
+            <th>Tools</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="runsTableBody">
+          <tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 24px;">No execution runs logged yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 4: TOOL REGISTRY & GUARD SETTINGS                                      -->
+  <!-- ========================================================================= -->
+  <div class="tab-content" id="toolsTab">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Tool Registry & Human-in-the-Loop Guards</h2>
+        <p class="section-desc">Guarded tools require explicit human approval via the interactive card before running. Unguarded tools run autonomously.</p>
+      </div>
+      <button class="primary" id="saveToolGuardsBtn">Save Guard Settings</button>
+    </div>
+
+    <div class="table-responsive-wrap">
+      <table class="tools-table">
+        <thead>
+          <tr>
+            <th>Tool Name</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Requires Human Approval (Guard)</th>
+          </tr>
+        </thead>
+        <tbody id="toolGuardsTableBody">
+          <!-- Dynamic Tool Rows -->
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
-<dialog id="tools" aria-labelledby="toolsTitle">
+<!-- ========================================================================= -->
+<!-- MODAL: REGISTER / EDIT AGENT                                              -->
+<!-- ========================================================================= -->
+<dialog id="agentModal">
+  <form id="agentForm" method="dialog">
+    <div class="dlg-head">
+      <h3 id="modalTitle">Register New Agent</h3>
+      <p id="modalSub">Define agent identity, task (system prompt), and available tool capabilities.</p>
+    </div>
+    <div class="dlg-body">
+      <input type="hidden" id="editAgentId" value="">
+
+      <div class="form-group">
+        <label for="agentNameInput">Agent Name *</label>
+        <input type="text" id="agentNameInput" required placeholder="e.g. Deep Research Analyst">
+      </div>
+
+      <div class="form-group">
+        <label for="agentTaskInput">Task (System Prompt) *</label>
+        <p class="hint">Instructions that define the agent's behavior, role, constraints, and problem-solving approach.</p>
+        <textarea id="agentTaskInput" required rows="4" placeholder="e.g. You are an expert researcher. Search the web, fetch source articles, and provide concise citations."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Available Tools</label>
+        <p class="hint">Select which tools this agent is equipped to use.</p>
+        <div class="tools-checkbox-grid" id="modalToolsCheckboxes">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="agentModelSelect">Model</label>
+        <select id="agentModelSelect">
+          <option value="google_genai:gemini-flash-latest">gemini-flash-latest (Recommended · High Quota)</option>
+          <option value="google_genai:gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+          <option value="google_genai:gemini-2.5-flash">gemini-2.5-flash</option>
+        </select>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" id="closeAgentModalBtn">Cancel</button>
+      <button type="submit" class="primary" id="saveAgentModalBtn">Save Agent</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ========================================================================= -->
+<!-- MODAL: RUN TRACE INSPECTOR                                                -->
+<!-- ========================================================================= -->
+<dialog id="traceModal">
   <div class="dlg-head">
-    <h3 id="toolsTitle">Manage tools</h3>
-    <p>Guarded tools need your approval before the agent can use them. Unchecked tools run automatically.</p>
+    <h3 id="traceModalTitle">Run Trace Inspector</h3>
+    <p id="traceModalSub">Execution timeline and step events</p>
   </div>
-  <div class="dlg-body" id="toolsList"></div>
+  <div class="dlg-body" id="traceModalBody">
+    <!-- Populated dynamically -->
+  </div>
   <div class="dlg-foot">
-    <span class="msg-line" id="toolsMsg" role="status"></span>
-    <button type="button" id="toolsCancel">Close</button>
-    <button type="button" class="primary" id="toolsSave">Save</button>
+    <button type="button" id="closeTraceModalBtn">Close</button>
   </div>
 </dialog>
 
+<!-- ========================================================================= -->
+<!-- JAVASCRIPT LOGIC                                                          -->
+<!-- ========================================================================= -->
 <script>
 const sid = crypto.randomUUID();
 const proto = location.protocol === "https:" ? "wss://" : "ws://";
 const chat = new WebSocket(`${proto}${location.host}/ws/chat?sid=${sid}`);
 const ver  = new WebSocket(`${proto}${location.host}/ws/verify?sid=${sid}`);
+
+let registeredAgents = [];
+let availableTools = [];
+let guardedToolsSet = new Set();
+let activeAgentId = "";
+let awaitingApproval = 0;
+let isAgentBusy = false;
+let typingIndicatorEl = null;
+
 const log = document.getElementById("log");
 const input = document.getElementById("in");
 
-/* ---------- helpers ---------- */
-const el = (tag, cls, text) => {
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (text !== undefined) e.textContent = text;
-  return e;
-};
-const pretty = (k) => String(k).replace(/[_-]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
-const scroll = () => { log.scrollTop = log.scrollHeight; };
-const uid = (() => { let n = 0; return () => "f" + (++n); })();
-
+/* ---------- Connection Status ---------- */
 function setConn(on, text) {
   document.getElementById("dot").classList.toggle("on", on);
   document.getElementById("stat").textContent = text;
 }
 chat.onopen = () => setConn(true, "Connected");
 chat.onclose = () => setConn(false, "Disconnected");
-chat.onerror = () => setConn(false, "Connection problem");
+chat.onerror = () => setConn(false, "Connection error");
 
-
-/* ---------- tool call normalising ---------- */
-// Supports {id, function:{name, arguments:"{...}"}} and {id, name, arguments|args|input}
-function readCall(tc) {
-  const fn = tc.function || tc;
-  let args = fn.arguments ?? fn.args ?? fn.input ?? {};
-  let wasString = false;
-  if (typeof args === "string") {
-    wasString = true;
-    try { args = JSON.parse(args || "{}"); } catch { args = { value: args }; wasString = false; }
-  }
-  return { name: fn.name || "action", args, wasString };
-}
-function writeCall(original, args, wasString) {
-  const copy = JSON.parse(JSON.stringify(original));
-  const value = wasString ? JSON.stringify(args) : args;
-  const target = copy.function || copy;
-  if ("arguments" in target) target.arguments = value;
-  else if ("args" in target) target.args = value;
-  else if ("input" in target) target.input = value;
-  else target.arguments = value;
-  return copy;
-}
-
-/* ---------- read-only summary in the chat log ---------- */
-function summarise(args) {
-  const dl = el("dl");
-  const walk = (v, prefix) => {
-    if (v !== null && typeof v === "object") {
-      Object.entries(v).forEach(([k, x]) => walk(x, prefix ? `${prefix} › ${pretty(k)}` : pretty(k)));
-    } else {
-      dl.append(el("dt", "", prefix || "Value"), el("dd", "", v === null ? "—" : String(v)));
-    }
+/* ---------- Tab Navigation ---------- */
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
+    btn.classList.add("active");
+    const target = document.getElementById(btn.dataset.tab);
+    if (target) target.classList.add("active");
+    if (btn.dataset.tab === "agentopsTab") loadAgentOpsData();
   };
-  walk(args, "");
-  return dl;
+});
+
+/* ---------- Helpers ---------- */
+const el = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
+const scrollLog = () => { log.scrollTop = log.scrollHeight; };
+const pretty = (s) => String(s || "").replace(/[_-]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+
+/* ---------- Typing Indicator ---------- */
+function hideTyping() {
+  if (typingIndicatorEl) { typingIndicatorEl.remove(); typingIndicatorEl = null; }
 }
-function addAction(tc) {
-  const { name, args } = readCall(tc);
-  const box = el("div", "action");
-  box.append(el("b", "", pretty(name)));
-  if (args && Object.keys(args).length) box.append(summarise(args));
-  log.appendChild(box);
-}
-function addMsg(cls, text) {
-  const d = el("div", "msg " + cls, text);
-  log.appendChild(d);
-  scroll();
-}
-function addNote(cls, text) {
-  log.appendChild(el("div", "note " + cls, text));
-  scroll();
-}
-
-/* ---------- form builder: turns any JSON value into friendly fields ---------- */
-// returns { node, get() }
-function buildField(value, label, onRemove) {
-  const id = uid();
-  const wrap = el("div", "field");
-
-  if (typeof value === "boolean") {
-    wrap.classList.add("check");
-    const cb = el("input"); cb.type = "checkbox"; cb.id = id; cb.checked = value;
-    wrap.append(cb, Object.assign(el("label", "", label), { htmlFor: id }));
-    return { node: wrap, get: () => cb.checked };
-  }
-
-  if (Array.isArray(value)) {
-    wrap.append(el("label", "", label));
-    const list = el("div", "nest");
-    const rows = [];
-    const addRow = (v) => {
-      const item = el("div", "item");
-      const body = el("div", "body");
-      const f = buildField(v, `${label} ${rows.length + 1}`);
-      const row = { f, item };
-      const rm = el("button", "small danger", "Remove");
-      rm.type = "button";
-      rm.onclick = () => { item.remove(); rows.splice(rows.indexOf(row), 1); };
-      body.append(f.node);
-      item.append(body, rm);
-      list.append(item);
-      rows.push(row);
-    };
-    value.forEach(addRow);
-    const add = el("button", "small", "Add item");
-    add.type = "button";
-    const sample = value.length ? value[0] : "";
-    const blank = (s) => (s && typeof s === "object") ? (Array.isArray(s) ? [] : Object.fromEntries(Object.keys(s).map((k) => [k, blank(s[k])]))) : (typeof s === "number" ? 0 : typeof s === "boolean" ? false : "");
-    add.onclick = () => addRow(blank(sample));
-    wrap.append(list, add);
-    return { node: wrap, get: () => rows.map((r) => r.f.get()) };
-  }
-
-  if (value !== null && typeof value === "object") {
-    wrap.append(el("label", "", label));
-    const box = el("div", "nest");
-    const kids = Object.entries(value).map(([k, v]) => [k, buildField(v, pretty(k))]);
-    kids.forEach(([, f]) => box.append(f.node));
-    wrap.append(box);
-    return { node: wrap, get: () => Object.fromEntries(kids.map(([k, f]) => [k, f.get()])) };
-  }
-
-  const lab = Object.assign(el("label", "", label), { htmlFor: id });
-  wrap.append(lab);
-
-  if (typeof value === "number") {
-    const n = el("input"); n.type = "number"; n.step = "any"; n.id = id; n.value = value;
-    wrap.append(n);
-    return { node: wrap, get: () => (n.value === "" ? null : Number(n.value)) };
-  }
-
-  const s = value === null ? "" : String(value);
-  const multi = s.length > 70 || s.includes("\n");
-  const t = multi ? el("textarea") : el("input");
-  if (!multi) t.type = "text";
-  t.id = id; t.value = s;
-  wrap.append(t);
-  return { node: wrap, get: () => (value === null && t.value === "" ? null : t.value) };
-}
-
-/* ---------- chat (already verified messages) ---------- */
-/* ---------- typing indicator ---------- */
-let busy = false;       // true from sending a message until the agent is "done"
-let awaitingYou = 0;    // open proposal cards waiting for the user
-let typingEl = null;
-function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
 function showTyping() {
-  if (!busy || awaitingYou > 0) return hideTyping();
-  if (!typingEl) {
-    typingEl = el("div", "typing");
-    typingEl.setAttribute("role", "status");
-    typingEl.setAttribute("aria-label", "Agent is typing");
-    typingEl.append(el("span"), el("span"), el("span"));
+  if (!isAgentBusy || awaitingApproval > 0) return hideTyping();
+  if (!typingIndicatorEl) {
+    typingIndicatorEl = el("div", "typing");
+    typingIndicatorEl.append(el("span"), el("span"), el("span"));
   }
-  log.appendChild(typingEl);   // re-append keeps it last
-  scroll();
+  log.appendChild(typingIndicatorEl);
+  scrollLog();
 }
-chat.addEventListener("close", () => { busy = false; hideTyping(); });
 
+/* ---------- Chat Messages UI ---------- */
+function addChatMsg(role, text, agentName) {
+  const clean = (text || "").trim();
+  if (role === "ai" && !clean) return; // Never render an empty AI bubble
+
+  const d = el("div", "msg " + role);
+  if (role === "ai" && agentName) {
+    d.append(el("div", "msg-agent-tag", agentName));
+  }
+  d.append(document.createTextNode(clean || text));
+  log.appendChild(d);
+  scrollLog();
+}
+
+function addChatNote(cls, text) {
+  log.appendChild(el("div", "note " + cls, text));
+  scrollLog();
+}
+
+function addToolActionBox(tc) {
+  const box = el("div", "action-box");
+  box.append(el("b", "", "🔧 " + pretty(tc.name || "Tool Action")));
+  if (tc.args && Object.keys(tc.args).length) {
+    const dl = el("dl");
+    Object.entries(tc.args).forEach(([k, v]) => {
+      dl.append(el("dt", "", pretty(k)), el("dd", "", typeof v === "object" ? JSON.stringify(v) : String(v)));
+    });
+    box.append(dl);
+  }
+  log.appendChild(box);
+  scrollLog();
+}
+
+/* ---------- WebSocket: Chat Receiving ---------- */
 chat.onmessage = (e) => {
   const m = JSON.parse(e.data);
   hideTyping();
-  if (m.type === "done") { busy = false; return addNote("", "Finished"); }
-  if (m.type === "info" || m.type === "error") {
-    if (m.type === "error") busy = false;
-    addNote(m.type, m.content);
-    return showTyping();
-  }
-  if (m.content) addMsg(m.role === "tool" ? "tool" : m.role, m.content);
-  (m.tool_calls || []).forEach(addAction);
-  scroll();
-  showTyping();
-};
 
-document.getElementById("f").onsubmit = (e) => {
-  e.preventDefault();
-  const t = input.value.trim();
-  if (!t || chat.readyState !== 1) return;
-  addMsg("user", t);
-  chat.send(JSON.stringify({ type: "user_message", content: t }));
-  input.value = "";
-  busy = true;
-  showTyping();
-};
-
-/* ---------- manage tools (guard list) ---------- */
-const toolsDlg = document.getElementById("tools");
-const toolsList = document.getElementById("toolsList");
-const toolsMsg = document.getElementById("toolsMsg");
-const toolsSave = document.getElementById("toolsSave");
-
-function toolsStatus(text, isError) {
-  toolsMsg.textContent = text || "";
-  toolsMsg.classList.toggle("error", !!isError);
-}
-async function getJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`${url} returned ${r.status}`);
-  return r.json();
-}
-function flat(list) { return [].concat(...(list || [])).filter((x) => typeof x === "string"); }
-
-function renderTools(available, guarded) {
-  toolsList.replaceChildren();
-  if (!available.length) {
-    toolsList.append(el("p", "hint", "No tools are registered yet."));
-    toolsSave.disabled = true;
+  if (m.type === "done") {
+    isAgentBusy = false;
+    addChatNote("", "Execution finished");
+    loadAgentOpsData();
     return;
   }
-  toolsSave.disabled = false;
-  available.forEach((name) => {
-    const row = el("div", "tool-row");
-    const id = uid();
-    const cb = el("input"); cb.type = "checkbox"; cb.id = id; cb.value = name; cb.checked = guarded.has(name);
-    const lab = Object.assign(el("label", "", name), { htmlFor: id });
-    const pill = el("span", "pill");
-    const sync = () => { pill.textContent = cb.checked ? "Guarded" : "Not guarded"; pill.classList.toggle("off", !cb.checked); };
-    cb.onchange = sync; sync();
-    row.append(cb, lab, pill);
-    toolsList.append(row);
-  });
-}
-
-async function openTools() {
-  toolsStatus("Loading…");
-  toolsList.replaceChildren();
-  toolsSave.disabled = true;
-  toolsDlg.showModal();
-  try {
-    const [a, g] = await Promise.all([getJSON("/tool_gaurd/get_available"), getJSON("/tool_gaurd/get_gaurd")]);
-    renderTools([...new Set(flat(a.tools))], new Set(flat(g.tools)));
-    toolsStatus("");
-  } catch (err) {
-    toolsStatus("Could not load tools: " + err.message, true);
+  if (m.type === "info") {
+    addChatNote("", m.content);
+    return showTyping();
   }
-}
-async function saveTools() {
-  const guarded = [...toolsList.querySelectorAll("input:checked")].map((c) => c.value);
-  toolsSave.disabled = true;
-  toolsStatus("Saving…");
-  try {
-    const r = await fetch("/tool_gaurd/set_gaurd", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tools: guarded }),
-    });
-    if (!r.ok) throw new Error("server returned " + r.status);
-    const g = await getJSON("/tool_gaurd/get_gaurd");   // re-read so the UI shows what the server really has
-    const saved = new Set(flat(g.tools));
-    toolsList.querySelectorAll("input").forEach((c) => { c.checked = saved.has(c.value); c.onchange(); });
-    toolsStatus(`Saved · ${saved.size} guarded`);
-    addNote("", `Guarded tools: ${saved.size ? [...saved].join(", ") : "none"}`);
-  } catch (err) {
-    toolsStatus("Save failed: " + err.message, true);
-  } finally {
-    toolsSave.disabled = false;
+  if (m.type === "error") {
+    isAgentBusy = false;
+    addChatNote("error", "Error: " + m.content);
+    return;
   }
-}
-document.getElementById("manageTools").onclick = openTools;
-document.getElementById("toolsCancel").onclick = () => toolsDlg.close();
-toolsSave.onclick = saveTools;
-toolsDlg.addEventListener("click", (e) => { if (e.target === toolsDlg) toolsDlg.close(); });
+  if (m.role === "ai") {
+    const content = (m.content || "").trim();
+    if (content) {
+      addChatMsg("ai", content, m.agent_name);
+    }
+  }
+  (m.tool_calls || []).forEach(addToolActionBox);
+  showTyping();
+};
 
-/* ---------- proposals ---------- */
-const roleLabel = { assistant: "Agent reply", tool: "Tool result", user: "User message", system: "System message" };
+/* ---------- WebSocket: Chat Sending ---------- */
+document.getElementById("f").onsubmit = (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text || chat.readyState !== 1) return;
 
+  const agent = registeredAgents.find((a) => a.id === activeAgentId) || registeredAgents[0];
+  addChatMsg("user", text);
+
+  chat.send(JSON.stringify({
+    type: "user_message",
+    agent_id: activeAgentId,
+    content: text
+  }));
+
+  input.value = "";
+  isAgentBusy = true;
+  showTyping();
+};
+
+/* ---------- WebSocket: Human-in-the-Loop Verifier Channel ---------- */
 ver.onmessage = (e) => {
   const p = JSON.parse(e.data);
   if (p.type !== "proposal") return;
 
-  awaitingYou++;
-  hideTyping();   // the ball is in the user's court
-  const card = el("div", "card");
-  card.append(el("h3", "", (roleLabel[p.role] || pretty(p.role)) + (p.name ? ` · ${pretty(p.name)}` : "")));
-  card.append(el("p", "hint", "Please review before this is sent. You can change anything below."));
+  awaitingApproval++;
+  hideTyping();
 
-  const msgField = buildField(p.content || "", p.tool_calls && p.tool_calls.length ? "Message" : "Content");
-  const ta = msgField.node.querySelector("input,textarea");
-  if (ta && ta.tagName === "INPUT") {
-    const big = el("textarea"); big.id = ta.id; big.value = ta.value; ta.replaceWith(big);
-    msgField.get = () => big.value;
-  }
-  card.append(msgField.node);
+  const card = el("div", "card guard-card");
+  card.append(el("h3", "", "🛡️ Human Verification Required · " + (p.name ? pretty(p.name) : pretty(p.role))));
+  card.append(el("p", "hint", "A guarded tool requires your approval before running. You may review, edit parameters, or reject."));
 
-  const calls = (p.tool_calls || []).map((tc) => {
-    const r = readCall(tc);
+  // Message or Content field
+  const contentArea = el("textarea");
+  contentArea.value = p.content || "";
+  contentArea.rows = 2;
+  const contentWrap = el("div", "form-group");
+  contentWrap.append(el("label", "", p.tool_calls && p.tool_calls.length ? "Proposed Context / Summary" : "Action Payload"), contentArea);
+  card.append(contentWrap);
+
+  // Tool Call Boxes
+  const callInputs = [];
+  (p.tool_calls || []).forEach((tc) => {
     const box = el("div", "tool-box");
-    const title = el("div", "tool-title");
-    title.append(el("span", "badge", "Action"), el("span", "", pretty(r.name)));
-    box.append(title);
-    const keys = r.args && typeof r.args === "object" ? Object.keys(r.args) : [];
-    const f = keys.length ? buildField(r.args, "Details") : null;
-    if (f) {
-      // flatten the top-level wrapper so fields sit directly in the box
-      const inner = f.node.querySelector(".nest");
-      box.append(inner ? inner : f.node);
-      inner && inner.classList.remove("nest");
-    } else {
-      box.append(el("div", "hint", "This action needs no extra details."));
-    }
+    box.append(el("div", "tool-title", "⚡ Action: " + pretty(tc.name)));
+
+    const argsArea = el("textarea");
+    argsArea.value = JSON.stringify(tc.args || {}, null, 2);
+    argsArea.rows = 4;
+    argsArea.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, monospace";
+    box.append(el("label", "", "Parameters (JSON):"), argsArea);
     card.append(box);
-    return { tc, r, f };
+    callInputs.push({ tc, argsArea });
   });
 
-  const answer = (type) => {
+  const sendDecision = (type) => {
     const out = { type, id: p.id };
     if (type === "edit") {
-      out.content = msgField.get();
-      if (calls.length) {
-        out.tool_calls = calls.map(({ tc, r, f }) => writeCall(tc, f ? f.get() : r.args, r.wasString));
+      out.content = contentArea.value;
+      if (callInputs.length) {
+        try {
+          out.tool_calls = callInputs.map(({ tc, argsArea }) => ({
+            ...tc,
+            args: JSON.parse(argsArea.value || "{}")
+          }));
+        } catch (err) {
+          alert("Invalid JSON parameters: " + err.message);
+          return;
+        }
       }
     }
     ver.send(JSON.stringify(out));
-    const done = { approve: "Approved", edit: "Sent with your changes", reject: "Rejected" }[type];
-    card.replaceWith(el("div", "note", done));
-    awaitingYou = Math.max(0, awaitingYou - 1);
-    scroll();
-    showTyping();   // agent resumes after your decision
+    const label = { approve: "✅ Approved", edit: "✏️ Sent with Changes", reject: "🛑 Rejected" }[type];
+    card.replaceWith(el("div", "note", label + " by human operator"));
+    awaitingApproval = Math.max(0, awaitingApproval - 1);
+    scrollLog();
+    showTyping();
   };
 
-  const bar = el("div", "actions");
-  const approve = el("button", "primary", "Approve"); approve.onclick = () => answer("approve");
-  const edit = el("button", "", "Send with changes"); edit.onclick = () => answer("edit");
-  const reject = el("button", "danger", "Reject"); reject.onclick = () => answer("reject");
-  bar.append(approve, edit, el("span", "spacer"), reject);
-  card.append(bar);
+  const actionRow = el("div", "guard-actions");
+
+  const btnApprove = el("button", "primary", "Approve");
+  btnApprove.onclick = () => sendDecision("approve");
+
+  const btnEdit = el("button", "", "Send with Changes");
+  btnEdit.onclick = () => sendDecision("edit");
+
+  const btnReject = el("button", "danger", "Reject");
+  btnReject.onclick = () => sendDecision("reject");
+
+  actionRow.append(btnApprove, btnEdit, btnReject);
+  card.append(actionRow);
 
   log.appendChild(card);
-  scroll();
+  scrollLog();
 };
+
+/* ---------- Data Loading & Rendering ---------- */
+async function loadAgents() {
+  try {
+    const res = await fetch("/api/agents");
+    const data = await res.json();
+    registeredAgents = data.agents || [];
+    document.getElementById("agentCountBadge").textContent = registeredAgents.length;
+    renderAgentsGrid();
+    renderAgentDropdown();
+  } catch (err) {
+    console.error("Failed loading agents:", err);
+  }
+}
+
+async function loadTools() {
+  try {
+    const res = await fetch("/api/tools");
+    const data = await res.json();
+    availableTools = data.tools || [];
+    guardedToolsSet = new Set(data.guarded || []);
+    document.getElementById("guardCountBadge").textContent = guardedToolsSet.size;
+    renderToolsTable();
+  } catch (err) {
+    console.error("Failed loading tools:", err);
+  }
+}
+
+async function loadAgentOpsData() {
+  try {
+    const [statsRes, runsRes] = await Promise.all([
+      fetch("/api/stats").then(r => r.json()),
+      fetch("/api/runs?limit=30").then(r => r.json())
+    ]);
+
+    document.getElementById("statTotalAgents").textContent = statsRes.total_agents || registeredAgents.length;
+    document.getElementById("statTotalRuns").textContent = statsRes.total_runs || 0;
+    document.getElementById("statTotalTools").textContent = statsRes.total_tool_calls || 0;
+    document.getElementById("statApprovals").textContent = (statsRes.approvals_approved || 0) + (statsRes.approvals_rejected || 0);
+    document.getElementById("statApprovalsSub").textContent = `${statsRes.approvals_approved || 0} approved · ${statsRes.approvals_rejected || 0} rejected`;
+
+    renderRunsTable(runsRes.runs || []);
+  } catch (err) {
+    console.error("Failed loading AgentOps data:", err);
+  }
+}
+
+/* ---------- Render Agent Cards Grid ---------- */
+function renderAgentsGrid() {
+  const grid = document.getElementById("agentsGrid");
+  grid.replaceChildren();
+
+  registeredAgents.forEach((agent) => {
+    const card = el("div", "agent-card");
+
+    const top = el("div");
+    const head = el("div", "agent-card-head");
+    head.append(el("h3", "agent-name", agent.name), el("span", "badge green", "Active"));
+    top.append(head);
+
+    const taskP = el("p", "agent-task", agent.task);
+    top.append(taskP);
+
+    top.append(el("div", "agent-tools-label", "Allocated Tools (" + (agent.tools || []).length + ")"));
+    const toolsDiv = el("div", "agent-tools-list");
+    (agent.tools || []).forEach((t) => {
+      toolsDiv.append(el("span", "badge gray", t));
+    });
+    if (!(agent.tools || []).length) {
+      toolsDiv.append(el("span", "badge gray", "No tools (pure reasoning)"));
+    }
+    top.append(toolsDiv);
+    card.append(top);
+
+    const foot = el("div", "agent-card-foot");
+    foot.append(el("span", "", `Runs: ${agent.total_runs || 0}`));
+
+    const btns = el("div", "card-actions");
+
+    const chatBtn = el("button", "small primary", "Chat");
+    chatBtn.onclick = () => switchAndOpenChat(agent.id);
+
+    const editBtn = el("button", "small", "Edit");
+    editBtn.onclick = () => openEditAgentModal(agent);
+
+    const delBtn = el("button", "small danger", "Delete");
+    delBtn.onclick = () => deleteAgent(agent.id, agent.name);
+
+    btns.append(chatBtn, editBtn, delBtn);
+    foot.append(btns);
+    card.append(foot);
+
+    grid.append(card);
+  });
+}
+
+function renderAgentDropdown() {
+  const sel = document.getElementById("agentSelectDropdown");
+  sel.replaceChildren();
+
+  if (!activeAgentId && registeredAgents.length) {
+    activeAgentId = registeredAgents[0].id;
+  }
+
+  registeredAgents.forEach((a) => {
+    const opt = el("option", "", a.name);
+    opt.value = a.id;
+    if (a.id === activeAgentId) opt.selected = true;
+    sel.append(opt);
+  });
+
+  updateActiveAgentBanner();
+}
+
+function updateActiveAgentBanner() {
+  const agent = registeredAgents.find((a) => a.id === activeAgentId) || registeredAgents[0];
+  if (!agent) return;
+  activeAgentId = agent.id;
+  document.getElementById("chatAgentName").textContent = agent.name;
+  document.getElementById("chatAgentIcon").textContent = agent.name.charAt(0).toUpperCase();
+  document.getElementById("chatAgentTools").textContent = `Tools: ${(agent.tools || []).join(", ") || "none"} · Model: ${(agent.model || "gemini-2.5-flash-lite").replace("google_genai:", "")}`;
+}
+
+function switchAndOpenChat(agentId) {
+  activeAgentId = agentId;
+  const sel = document.getElementById("agentSelectDropdown");
+  sel.value = agentId;
+  updateActiveAgentBanner();
+  chat.send(JSON.stringify({ type: "switch_agent", agent_id: agentId }));
+  document.querySelector('.tab-btn[data-tab="chatTab"]').click();
+}
+
+document.getElementById("agentSelectDropdown").onchange = (e) => {
+  switchAndOpenChat(e.target.value);
+};
+
+/* ---------- Render Tools Guard Table ---------- */
+function renderToolsTable() {
+  const tbody = document.getElementById("toolGuardsTableBody");
+  tbody.replaceChildren();
+
+  availableTools.forEach((t) => {
+    const tr = el("tr");
+    tr.append(el("td", "", t.name));
+    tr.append(el("td", "", t.category));
+    tr.append(el("td", "", t.description));
+
+    const tdGuard = el("td");
+    const switchLabel = el("label", "switch");
+    const cb = el("input");
+    cb.type = "checkbox";
+    cb.value = t.name;
+    cb.checked = guardedToolsSet.has(t.name);
+    cb.onchange = () => {
+      if (cb.checked) guardedToolsSet.add(t.name);
+      else guardedToolsSet.delete(t.name);
+      document.getElementById("guardCountBadge").textContent = guardedToolsSet.size;
+    };
+    const slider = el("span", "slider");
+    switchLabel.append(cb, slider);
+    tdGuard.append(switchLabel);
+    tr.append(tdGuard);
+
+    tbody.append(tr);
+  });
+}
+
+document.getElementById("saveToolGuardsBtn").onclick = async () => {
+  const btn = document.getElementById("saveToolGuardsBtn");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+  try {
+    const res = await fetch("/api/tools/guard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tools: Array.from(guardedToolsSet) })
+    });
+    if (res.ok) {
+      alert("Guard settings saved successfully!");
+      loadTools();
+    }
+  } catch (err) {
+    alert("Failed to save guards: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save Guard Settings";
+  }
+};
+
+/* ---------- Render AgentOps Runs Table ---------- */
+function renderRunsTable(runs) {
+  const tbody = document.getElementById("runsTableBody");
+  tbody.replaceChildren();
+
+  if (!runs.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 24px;">No execution runs logged yet.</td></tr>';
+    return;
+  }
+
+  runs.forEach((r) => {
+    const tr = el("tr");
+    tr.append(el("td", "", `${r.id} (${r.created_at ? r.created_at.substring(11, 19) : ""})`));
+    tr.append(el("td", "", r.agent_name || r.agent_id));
+    const promptSnippet = (r.prompt || "").length > 45 ? (r.prompt || "").substring(0, 45) + "..." : (r.prompt || "");
+    tr.append(el("td", "", promptSnippet));
+    tr.append(el("td", "", String(r.tool_calls_count || 0)));
+    tr.append(el("td", "", `${r.duration_ms || 0} ms`));
+
+    const statusBadge = el("span", "badge " + (r.status === "completed" ? "green" : r.status === "failed" ? "red" : "gray"), r.status);
+    const tdStatus = el("td");
+    tdStatus.append(statusBadge);
+    tr.append(tdStatus);
+
+    const tdAction = el("td");
+    const traceBtn = el("button", "small", "Inspect Trace");
+    traceBtn.onclick = () => openTraceModal(r.id);
+    tdAction.append(traceBtn);
+    tr.append(tdAction);
+
+    tbody.append(tr);
+  });
+}
+
+/* ---------- Agent Modal (Register & Edit) ---------- */
+const agentModal = document.getElementById("agentModal");
+
+function populateModalToolCheckboxes(selectedTools = []) {
+  const box = document.getElementById("modalToolsCheckboxes");
+  box.replaceChildren();
+
+  availableTools.forEach((t) => {
+    const item = el("label", "tool-checkbox-item");
+    const cb = el("input");
+    cb.type = "checkbox";
+    cb.value = t.name;
+    cb.checked = selectedTools.includes(t.name);
+
+    const textDiv = el("div");
+    const title = el("div", "tool-checkbox-title");
+    title.append(document.createTextNode(t.name), el("span", "badge gray", t.category));
+    const desc = el("div", "tool-checkbox-desc", t.description);
+    textDiv.append(title, desc);
+
+    item.append(cb, textDiv);
+    box.append(item);
+  });
+}
+
+document.getElementById("openRegisterAgentBtn").onclick = () => {
+  document.getElementById("modalTitle").textContent = "Register New Agent";
+  document.getElementById("modalSub").textContent = "Add an autonomous agent to the system with custom task instructions and tools.";
+  document.getElementById("editAgentId").value = "";
+  document.getElementById("agentNameInput").value = "";
+  document.getElementById("agentTaskInput").value = "";
+  document.getElementById("agentModelSelect").value = "google_genai:gemini-flash-latest";
+  populateModalToolCheckboxes(["web_search"]);
+  agentModal.showModal();
+};
+
+function openEditAgentModal(agent) {
+  document.getElementById("modalTitle").textContent = "Edit Agent: " + agent.name;
+  document.getElementById("modalSub").textContent = "Update task prompt, tool allocations, or model.";
+  document.getElementById("editAgentId").value = agent.id;
+  document.getElementById("agentNameInput").value = agent.name;
+  document.getElementById("agentTaskInput").value = agent.task;
+  document.getElementById("agentModelSelect").value = agent.model || "google_genai:gemini-flash-latest";
+  populateModalToolCheckboxes(agent.tools || []);
+  agentModal.showModal();
+}
+
+document.getElementById("closeAgentModalBtn").onclick = () => agentModal.close();
+
+document.getElementById("agentForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const editId = document.getElementById("editAgentId").value;
+  const name = document.getElementById("agentNameInput").value.trim();
+  const task = document.getElementById("agentTaskInput").value.trim();
+  const model = document.getElementById("agentModelSelect").value;
+  const selectedTools = Array.from(document.querySelectorAll("#modalToolsCheckboxes input:checked")).map(c => c.value);
+
+  if (!name || !task) {
+    alert("Please provide both Name and Task (System Prompt).");
+    return;
+  }
+
+  const payload = { name, task, tools: selectedTools, model };
+
+  try {
+    let res;
+    if (editId) {
+      res = await fetch(`/api/agents/${editId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      res = await fetch("/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if (res.ok) {
+      agentModal.close();
+      await loadAgents();
+      await loadAgentOpsData();
+    } else {
+      const err = await res.json();
+      alert("Error saving agent: " + (err.error || "Unknown error"));
+    }
+  } catch (err) {
+    alert("Network error: " + err.message);
+  }
+};
+
+async function deleteAgent(agentId, agentName) {
+  if (registeredAgents.length <= 1) {
+    alert("Cannot delete the last remaining agent.");
+    return;
+  }
+  if (!confirm(`Are you sure you want to delete agent "${agentName}"?`)) return;
+
+  try {
+    const res = await fetch(`/api/agents/${agentId}`, { method: "DELETE" });
+    if (res.ok) {
+      if (activeAgentId === agentId) activeAgentId = "";
+      await loadAgents();
+      await loadAgentOpsData();
+    } else {
+      const err = await res.json();
+      alert("Could not delete agent: " + (err.error || "Unknown"));
+    }
+  } catch (err) {
+    alert("Error deleting agent: " + err.message);
+  }
+}
+
+/* ---------- Trace Inspector Modal ---------- */
+const traceModal = document.getElementById("traceModal");
+document.getElementById("closeTraceModalBtn").onclick = () => traceModal.close();
+
+async function openTraceModal(runId) {
+  const body = document.getElementById("traceModalBody");
+  body.innerHTML = "<p>Loading run trace...</p>";
+  traceModal.showModal();
+
+  try {
+    const res = await fetch(`/api/runs/${runId}`);
+    const data = await res.json();
+    const run = data.run;
+
+    document.getElementById("traceModalTitle").textContent = `Run Trace: ${run.id}`;
+    document.getElementById("traceModalSub").textContent = `Agent: ${run.agent_name} · Status: ${run.status} · Duration: ${run.duration_ms || 0}ms`;
+
+    body.replaceChildren();
+
+    // Summary box
+    const summaryBox = el("div");
+    summaryBox.style.background = "#f8fafc";
+    summaryBox.style.border = "1px solid var(--line)";
+    summaryBox.style.borderRadius = "8px";
+    summaryBox.style.padding = "12px";
+    summaryBox.innerHTML = `
+      <div style="font-weight: 600; margin-bottom: 4px;">User Prompt:</div>
+      <div style="font-size: 13.5px; margin-bottom: 8px;">${run.prompt || ""}</div>
+      <div style="font-weight: 600; margin-bottom: 4px;">Final Response:</div>
+      <div style="font-size: 13.5px; white-space: pre-wrap;">${run.response || (run.error ? `<span style="color:var(--danger)">Error: ${run.error}</span>` : "—")}</div>
+    `;
+    body.append(summaryBox);
+
+    body.append(el("h4", "", "Execution Timeline & Events (" + (run.steps || []).length + ")"));
+
+    const timeline = el("div", "timeline");
+    if (!(run.steps || []).length) {
+      timeline.append(el("p", "hint", "No granular step events recorded for this run."));
+    } else {
+      run.steps.forEach((s) => {
+        const item = el("div", "timeline-item");
+        item.append(el("div", "timeline-time", s.iso_time || ""));
+        item.append(el("div", "timeline-event", pretty(s.event)));
+        const dataBox = el("div", "timeline-data", JSON.stringify(s.data, null, 2));
+        item.append(dataBox);
+        timeline.append(item);
+      });
+    }
+    body.append(timeline);
+  } catch (err) {
+    body.innerHTML = `<p style="color:var(--danger)">Failed loading trace: ${err.message}</p>`;
+  }
+}
+
+/* ---------- Refresh Buttons ---------- */
+document.getElementById("refreshAllBtn").onclick = () => {
+  loadAgents();
+  loadTools();
+  loadAgentOpsData();
+};
+document.getElementById("refreshRunsBtn").onclick = loadAgentOpsData;
+
+/* ---------- Initial Boot ---------- */
+(async () => {
+  await loadTools();
+  await loadAgents();
+  await loadAgentOpsData();
+})();
 </script>
 </body>
 </html>
