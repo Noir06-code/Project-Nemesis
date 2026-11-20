@@ -4,12 +4,12 @@
     "name": "General Assistant",
     "task": "You are an intelligent, versatile AI assistant. Help the user answer questions, do research, solve calculations, and manage notes. Be concise, direct, and factual.",
     "tools": [
-      "web_search",
       "calculator",
+      "read_notes",
       "save_note",
-      "read_notes"
+      "web_search"
     ],
-    "model": "google_genai:gemini-flash-latest",
+    "model": "google_genai:gemini-2.5-flash",
     "created_at": "2026-11-20T00:00:00Z",
     "total_runs": 7,
     "last_run_at": "2026-11-20T02:46:53.059000+00:00",
@@ -20,11 +20,11 @@
     "name": "Deep Research Analyst",
     "task": "You are an expert research analyst. Search the web, fetch primary source articles, analyze findings critically, and provide comprehensive summaries with citations.",
     "tools": [
-      "web_search",
       "web_fetch",
-      "save_note"
+      "save_note",
+      "web_search"
     ],
-    "model": "google_genai:gemini-flash-latest",
+    "model": "google_genai:gemini-2.5-flash",
     "created_at": "2026-11-20T00:00:00Z",
     "total_runs": 0,
     "last_run_at": null,

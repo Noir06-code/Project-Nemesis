@@ -1,0 +1,34 @@
+[
+  {
+    "id": "run_ae0885b95cbe",
+    "agent_id": "general-assistant",
+    "agent_name": "General Assistant",
+    "session_id": "ab772307-7615-4244-9816-a0ab3fb547fe",
+    "prompt": "hi",
+    "status": "running",
+    "start_time": 1795185410.0414033,
+    "created_at": "2026-11-20T14:36:50.041403+00:00",
+    "end_time": null,
+    "duration_ms": 0,
+    "steps": [],
+    "tool_calls_count": 0,
+    "response": null,
+    "error": null
+  },
+  {
+    "id": "run_aadc2f15f71d",
+    "agent_id": "general-assistant",
+    "agent_name": "General Assistant",
+    "session_id": "c4b98f7e-6bed-414c-8f51-5fd9772fa943",
+    "prompt": "hi",
+    "status": "failed",
+    "start_time": 1795185297.045725,
+    "created_at": "2026-11-20T14:34:57.045725+00:00",
+    "end_time": 1795185301.4324994,
+    "duration_ms": 4386,
+    "steps": [],
+    "tool_calls_count": 0,
+    "response": null,
+    "error": "1 validation error for ChatGoogleGenerativeAI\n  Value error, API key required for Gemini Developer API. Provide api_key parameter or set GOOGLE_API_KEY/GEMINI_API_KEY environment variable. [type=value_error, input_value={'model': 'gemini-flash-l...st', 'model_kwargs': {}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/value_error"
+  }
+]
