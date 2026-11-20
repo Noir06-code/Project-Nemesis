@@ -1,8 +1,50 @@
+#from langchain.chat_models import init_chat_model
+#from typing import Annotated
+#from typing_extensions import TypedDict
+#from langgraph.graph import StateGraph, START, END
+#from langgraph.graph.message import add_messages
+#from langgraph.prebuilt import ToolNode, tools_condition
+##from Tools.tools import tools
+#from dotenv import load_dotenv
+#
+#load_dotenv()
+#
+#
+#class State(TypedDict):
+#    messages: Annotated[list, add_messages]
+#
+#
+#
+#class Agent():
+#    # TODO: I have to add tool rag here and dynamic system prompt skill based in agents
+#    def __init__(self, model="google_genai:gemini-2.5-flash", system_prompt="", tools=[]):
+#
+#        self.llm = init_chat_model(model)
+#        self.llm_with_tools=self.llm.bind_tools(tools)
+#        chatbot=self.chatbot
+#        builder = StateGraph(State)
+#        builder.add_node(chatbot)
+#        builder.add_node("tools", ToolNode(tools))
+#        builder.add_edge(START, "chatbot")
+#        builder.add_conditional_edges("chatbot", tools_condition)
+#        builder.add_edge("tools", "chatbot")
+#        self.graph = builder.compile()
+#    
+#    def chatbot(self,state: State):
+#        return {"messages": [self.llm_with_tools.invoke(state["messages"])]}
+#    
+#    
+#    
+#    def invoke(self, message):
+#        state = self.graph.invoke({"messages": [{"role": "user", "content": message}]})
+#        return state["messages"][-1].content
+
+
 import json
 import queue
+from contextlib import contextmanager
 import threading
 import uuid
-from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Annotated
 
@@ -12,66 +54,39 @@ from langchain_core.messages import (
     AIMessage,
     HumanMessage,
     RemoveMessage,
-    SystemMessage,
     ToolMessage,
     convert_to_messages,
 )
-from langgraph.graph import END, START, StateGraph
+from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from typing_extensions import TypedDict
-
-from Agent.agentops import agentops
-
+import requests
+#from Tools.tools import available_tools
 load_dotenv()
 
-# ----------------------------------------------------------------------------
-# In-Process Thread-Safe Tool Guard Registry
-# ----------------------------------------------------------------------------
-_guarded_tools: set[str] = {"system_command"}
-_guarded_lock = threading.Lock()
-
-
-def get_guarded_tools() -> set[str]:
-    with _guarded_lock:
-        return set(_guarded_tools)
-
-
-def set_guarded_tools(tools_list: list[str]):
-    with _guarded_lock:
-        _guarded_tools.clear()
-        _guarded_tools.update(tools_list)
-
-
-def VERIFICATION_NEEDED() -> set[str]:
-    return get_guarded_tools()
-
 
 # ----------------------------------------------------------------------------
-# Helpers: Turning messages into JSON for the WebSocket and AgentOps
+# Helpers: turning messages into JSON for the websocket
 # ----------------------------------------------------------------------------
+
+
+def set_tools(tools):
+    requests.post("http://localhost:5000/tool_gaurd/set_available",
+                  json={"tools":[i.name for i in tools]}
+                  )
+    
 def text_of(content):
-    """Robustly extract text from string, dict block, object block, or list of blocks."""
-    if not content:
-        return ""
+    """Message content can be a str or a list of blocks (e.g. Gemini/Claude)."""
     if isinstance(content, str):
-        return content.strip()
-    if isinstance(content, (list, tuple)):
-        parts = []
-        for block in content:
-            if isinstance(block, str):
-                parts.append(block)
-            elif isinstance(block, dict):
-                if "text" in block and block["text"] is not None:
-                    parts.append(str(block["text"]))
-                elif block.get("type") == "text":
-                    parts.append(str(block.get("text", "")))
-            elif hasattr(block, "text"):
-                parts.append(str(block.text))
-            elif hasattr(block, "content"):
-                parts.append(str(block.content))
-        return "".join(parts).strip()
-    return str(content).strip()
+        return content
+    parts = []
+    for block in content or []:
+        if isinstance(block, str):
+            parts.append(block)
+        elif isinstance(block, dict) and block.get("type") == "text":
+            parts.append(block.get("text", ""))
+    return "".join(parts)
 
 
 def serialize(m):
@@ -79,7 +94,7 @@ def serialize(m):
     if isinstance(m, AIMessage):
         d["tool_calls"] = [
             {"id": tc["id"], "name": tc["name"], "args": tc["args"]}
-            for tc in getattr(m, "tool_calls", [])
+            for tc in m.tool_calls
         ]
     if isinstance(m, ToolMessage):
         d["name"] = m.name
@@ -88,7 +103,8 @@ def serialize(m):
 
 
 # ----------------------------------------------------------------------------
-# Verifier: one per session for Human-in-the-Loop approvals
+# Verifier: one per session. The reducer calls request(), which pushes the
+# message to the user over the verify websocket and blocks until they answer.
 # ----------------------------------------------------------------------------
 class Verifier:
     def __init__(self, timeout=600):
@@ -98,9 +114,11 @@ class Verifier:
         self.pending = {}  # message id -> (proposal dict, Queue)
         self._lock = threading.Lock()
 
+    # --- verify websocket lifecycle -----------------------------------------
     def attach(self, ws):
         with self._lock:
             self.ws = ws
+            # if the page was reloaded, re-send anything still waiting
             for proposal, _ in list(self.pending.values()):
                 self._send(proposal)
 
@@ -109,7 +127,7 @@ class Verifier:
             if self.ws is ws:
                 self.ws = None
 
-    def _send(self, payload):
+    def _send(self, payload):  # call with lock held
         if self.ws is None:
             return
         try:
@@ -117,6 +135,7 @@ class Verifier:
         except Exception:
             self.ws = None
 
+    # --- called from the reducer (graph thread) -----------------------------
     def request(self, msg):
         proposal = {"type": "proposal", **serialize(msg)}
         q = queue.Queue(maxsize=1)
@@ -127,7 +146,7 @@ class Verifier:
             try:
                 decision = q.get(timeout=self.timeout)
             except queue.Empty:
-                decision = {"type": "reject", "id": msg.id, "reason": "timeout"}
+                decision = {"type": "reject"}
             if decision.get("type") not in ("approve", "edit") and not isinstance(msg, ToolMessage):
                 self.ai_rejected = True
             return decision
@@ -135,6 +154,7 @@ class Verifier:
             with self._lock:
                 self.pending.pop(msg.id, None)
 
+    # --- called from the verify websocket thread ----------------------------
     def resolve(self, decision):
         with self._lock:
             item = self.pending.get(decision.get("id"))
@@ -146,7 +166,6 @@ class Verifier:
 
 
 _current_verifier: ContextVar = ContextVar("verifier", default=None)
-_current_run_id: ContextVar = ContextVar("run_id", default=None)
 
 
 def _apply_decision(msg, d):
@@ -161,10 +180,11 @@ def _apply_decision(msg, d):
         if d.get("content") is not None:
             update["content"] = d["content"]
         if isinstance(msg, AIMessage) and d.get("tool_calls") is not None:
-            old = getattr(msg, "tool_calls", [])
+            old = msg.tool_calls
             update["tool_calls"] = [
                 {
-                    "id": tc.get("id") or (old[i]["id"] if i < len(old) else str(uuid.uuid4())),
+                    "id": tc.get("id")
+                    or (old[i]["id"] if i < len(old) else str(uuid.uuid4())),
                     "name": tc["name"],
                     "args": tc.get("args", {}),
                     "type": "tool_call",
@@ -173,7 +193,10 @@ def _apply_decision(msg, d):
             ]
         return msg.model_copy(update=update)
 
-    # Reject
+    # reject (or anything unrecognised): nothing is added to memory.
+    # Exception: a rejected tool result is replaced by a stub, otherwise the
+    # (already approved) AI tool call would have no answer and the next LLM
+    # call would fail with a dangling tool_call.
     if isinstance(msg, ToolMessage):
         return ToolMessage(
             content="[rejected by user]",
@@ -185,12 +208,35 @@ def _apply_decision(msg, d):
 
 
 # ----------------------------------------------------------------------------
-# The Reducer
+# The reducer: same as add_messages, but everything that is not a user message
+# must be approved / edited / rejected by the user before it is merged.
 # ----------------------------------------------------------------------------
+'''def verified_add_messages(left, right):
+    verifier = _current_verifier.get()
+    if verifier is None:  # no session attached -> behave like plain add_messages
+        return add_messages(left, right)
+
+    incoming = convert_to_messages(right if isinstance(right, list) else [right])
+    accepted = []
+    for m in incoming:
+        if m.id is None:
+            m.id = str(uuid.uuid4())
+        if isinstance(m, (HumanMessage, RemoveMessage)):
+            accepted.append(m)  # user's own messages skip verification
+            continue
+        out = _apply_decision(m, verifier.request(m))
+        if out is not None:
+            accepted.append(out)
+    return add_messages(left, accepted)'''
+
+def VERIFICATION_NEEDED():
+    data = requests.get("http://localhost:5000/tool_gaurd/get_gaurd")
+    return {i for i in data.json().get("tools")}
+
+
+
 def verified_add_messages(left, right):
     verifier = _current_verifier.get()
-    run_id = _current_run_id.get()
-    guarded = get_guarded_tools()
 
     if verifier is None:
         return add_messages(left, right)
@@ -205,193 +251,73 @@ def verified_add_messages(left, right):
         if m.id is None:
             m.id = str(uuid.uuid4())
 
-        # Human and Remove messages pass unconditionally
+        # Always allow user messages and removal operations
         if isinstance(m, (HumanMessage, RemoveMessage)):
             accepted.append(m)
             continue
 
-        # Tool result message
+        # Tool results: skip verification unless the tool is guarded
         if isinstance(m, ToolMessage):
-            if run_id:
-                agentops.log_step(run_id, "tool_result", {
-                    "tool": m.name,
-                    "tool_call_id": m.tool_call_id,
-                    "content": text_of(m.content)[:1000]
-                })
-
-            if {m.name}.isdisjoint(guarded):
+            if {m.name}.isdisjoint(VERIFICATION_NEEDED()):
                 accepted.append(m)
                 continue
 
-            # Guarded tool result approval
-            if run_id:
-                agentops.log_step(run_id, "human_approval_request", {
-                    "type": "tool_result",
-                    "name": m.name,
-                    "content": text_of(m.content)
-                })
-                agentops.record_approval_request()
-
-            decision = verifier.request(m)
-            if run_id:
-                agentops.log_step(run_id, "human_decision", decision)
-                agentops.record_approval(decision.get("type"))
-
-            out = _apply_decision(m, decision)
-            if out is not None:
-                accepted.append(out)
-            continue
-
-        # AI Message
         if isinstance(m, AIMessage):
-            # Plain text reply without tool calls
-            if not getattr(m, "tool_calls", None):
+            # Plain text replies (no tool calls) are never verified
+            if not m.tool_calls:
                 accepted.append(m)
                 continue
 
+            # Tool calls: skip verification unless a guarded tool is involved
             tool_names = {tc["name"] for tc in m.tool_calls}
-            if run_id:
-                agentops.log_step(run_id, "tool_call", {
-                    "tools": list(tool_names),
-                    "tool_calls": m.tool_calls
-                })
-
-            # Check if any tool is in guarded set
-            if tool_names.isdisjoint(guarded):
+            if tool_names.isdisjoint(VERIFICATION_NEEDED()):
                 accepted.append(m)
                 continue
 
-            if run_id:
-                agentops.log_step(run_id, "human_approval_request", {
-                    "type": "ai_tool_call",
-                    "tools": list(tool_names),
-                    "tool_calls": m.tool_calls
-                })
-                agentops.record_approval_request()
+        # Everything else (guarded tool calls and their results) requires verification
+        out = _apply_decision(m, verifier.request(m))
 
-            decision = verifier.request(m)
-            if run_id:
-                agentops.log_step(run_id, "human_decision", decision)
-                agentops.record_approval(decision.get("type"))
-
-            out = _apply_decision(m, decision)
-            if out is not None:
-                accepted.append(out)
-            continue
-
-        accepted.append(m)
+        if out is not None:
+            accepted.append(out)
 
     return add_messages(left, accepted)
-
 
 class State(TypedDict):
     messages: Annotated[list, verified_add_messages]
 
 
 @contextmanager
-def use_verifier(verifier, run_id: str = None):
-    token_v = _current_verifier.set(verifier)
-    token_r = _current_run_id.set(run_id)
+def use_verifier(verifier):
+    """Wrap agent.invoke(...) in this so the reducer knows which user to ask."""
+    token = _current_verifier.set(verifier)
     try:
         yield
     finally:
-        _current_verifier.reset(token_v)
-        _current_run_id.reset(token_r)
+        _current_verifier.reset(token)
 
 
-# Base instruction appended to all agents to guarantee a non-empty final response
-BASE_AGENT_GUIDELINES = (
-    "\n\nOperational Guidelines:\n"
-    "- When you use tools, ALWAYS provide a comprehensive, direct, and helpful final response explaining and synthesizing the findings or calculation results to the user.\n"
-    "- Never finish your turn with an empty message after executing tools."
-)
+class Agent():
+    # TODO: I have to add tool rag here and dynamic system prompt skill based in agents
+    def __init__(self, model="google_genai:gemini-2.5-flash", system_prompt="", tools=[]):
 
-
-# ----------------------------------------------------------------------------
-# Agent Class
-# ----------------------------------------------------------------------------
-class Agent:
-    def __init__(
-        self,
-        id: str = None,
-        name: str = "Agent",
-        model: str = "google_genai:gemini-flash-latest",
-        system_prompt: str = "",
-        tools: list = None
-    ):
-        self.id = id or str(uuid.uuid4())
-        self.name = name
-        self.model = model
-        self.system_prompt = (system_prompt.strip() + BASE_AGENT_GUIDELINES).strip()
-        self.tools = tools or []
-        self._build_graph()
-
-    def _build_graph(self):
-        self.llm = init_chat_model(self.model)
-        if self.tools:
-            self.llm_with_tools = self.llm.bind_tools(self.tools)
-        else:
-            self.llm_with_tools = self.llm
-
+        self.llm = init_chat_model(model)
+        self.llm_with_tools=self.llm.bind_tools(tools)
+        set_tools(tools)
+        print("tool list is sent")
+        chatbot=self.chatbot
         builder = StateGraph(State)
-        builder.add_node("chatbot", self.chatbot)
-
-        if self.tools:
-            builder.add_node("tools", ToolNode(self.tools))
-            builder.add_edge(START, "chatbot")
-            builder.add_conditional_edges("chatbot", tools_condition)
-            builder.add_edge("tools", "chatbot")
-        else:
-            builder.add_edge(START, "chatbot")
-            builder.add_edge("chatbot", END)
-
+        builder.add_node(chatbot)
+        builder.add_node("tools", ToolNode(tools))
+        builder.add_edge(START, "chatbot")
+        builder.add_conditional_edges("chatbot", tools_condition)
+        builder.add_edge("tools", "chatbot")
         self.graph = builder.compile()
 
-    def chatbot(self, state: State):
-        messages = list(state["messages"])
-        has_system = any(
-            isinstance(m, SystemMessage) or getattr(m, "type", "") == "system"
-            for m in messages
-        )
-        if self.system_prompt and not has_system:
-            messages = [SystemMessage(content=self.system_prompt)] + messages
+    def chatbot(self,state: State):
+        return {"messages": [self.llm_with_tools.invoke(state["messages"])]}
 
-        try:
-            response = self.llm_with_tools.invoke(messages)
-            return {"messages": [response]}
-        except Exception as e:
-            # Fallback to gemini-flash-latest on quota or model errors
-            if "RESOURCE_EXHAUSTED" in str(e) or "NOT_FOUND" in str(e):
-                fallback_llm = init_chat_model("google_genai:gemini-flash-latest")
-                if self.tools:
-                    fallback_llm = fallback_llm.bind_tools(self.tools)
-                self.llm_with_tools = fallback_llm
-                response = self.llm_with_tools.invoke(messages)
-                return {"messages": [response]}
-            raise
 
-    def invoke(self, message: str) -> str:
-        state = self.graph.invoke({"messages": [HumanMessage(content=message)]})
-        messages = state.get("messages", [])
 
-        # 1. Search backwards for the last non-empty AIMessage text
-        for m in reversed(messages):
-            if isinstance(m, AIMessage):
-                txt = text_of(m.content)
-                if txt:
-                    return txt
-
-        # 2. If no non-empty AIMessage, check for ToolMessage output
-        for m in reversed(messages):
-            if isinstance(m, ToolMessage):
-                tool_output = text_of(m.content)
-                if tool_output and tool_output != "[rejected by user]":
-                    return f"Action completed. Result:\n{tool_output}"
-
-        # 3. Fallback to last message text or default confirmation
-        if messages:
-            txt = text_of(messages[-1].content)
-            if txt:
-                return txt
-
-        return "Task completed successfully."
+    def invoke(self, message):
+        state = self.graph.invoke({"messages": [{"role": "user", "content": message}]})
+        return state["messages"][-1].content
