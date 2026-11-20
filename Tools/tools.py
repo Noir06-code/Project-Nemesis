@@ -38,7 +38,7 @@ def _save_notes(notes: dict):
 # ----------------------------------------------------------------------------
 # Tool Definitions
 # ----------------------------------------------------------------------------
-
+'''
 @tool
 def system_command(command: str) -> str:
     """Run a shell command on the host system and return its output (stdout + stderr).
@@ -67,7 +67,7 @@ def system_command(command: str) -> str:
     if len(output) > MAX_CHARS:
         output = output[:MAX_CHARS] + f"\n...[truncated, {len(output) - MAX_CHARS} more chars]"
     return output.strip() or "Command completed with no output."
-
+'''
 
 @tool
 def web_search(query: str, max_results: int = 5) -> str:
@@ -289,16 +289,7 @@ AVAILABLE_TOOLS = {
             "url": {"type": "string", "description": "Full HTTP/HTTPS URL"}
         }
     },
-    "system_command": {
-        "name": "system_command",
-        "tool": system_command,
-        "description": "Execute shell commands on the host machine. Guarded by default for human verification.",
-        "category": "System",
-        "default_guarded": True,
-        "parameters": {
-            "command": {"type": "string", "description": "Shell command line to execute"}
-        }
-    },
+    
     "calculator": {
         "name": "calculator",
         "tool": calculator,
