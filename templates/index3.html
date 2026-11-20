@@ -1254,9 +1254,9 @@
       <div class="form-group">
         <label for="agentModelSelect">Model</label>
         <select id="agentModelSelect">
-          <option value="google_genai:gemini-flash-latest">gemini-flash-latest (Recommended · High Quota)</option>
+          <option value="google_genai:gemini-2.5-flash" selected>gemini-2.5-flash (Recommended)</option>
           <option value="google_genai:gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
-          <option value="google_genai:gemini-2.5-flash">gemini-2.5-flash</option>
+          <option value="google_genai:gemini-flash-latest">gemini-flash-latest</option>
         </select>
       </div>
     </div>
@@ -1627,7 +1627,7 @@ function updateActiveAgentBanner() {
   activeAgentId = agent.id;
   document.getElementById("chatAgentName").textContent = agent.name;
   document.getElementById("chatAgentIcon").textContent = agent.name.charAt(0).toUpperCase();
-  document.getElementById("chatAgentTools").textContent = `Tools: ${(agent.tools || []).join(", ") || "none"} · Model: ${(agent.model || "gemini-2.5-flash-lite").replace("google_genai:", "")}`;
+  document.getElementById("chatAgentTools").textContent = `Tools: ${(agent.tools || []).join(", ") || "none"} · Model: ${(agent.model || "gemini-2.5-flash").replace("google_genai:", "")}`;
 }
 
 function switchAndOpenChat(agentId) {
@@ -1761,7 +1761,7 @@ document.getElementById("openRegisterAgentBtn").onclick = () => {
   document.getElementById("editAgentId").value = "";
   document.getElementById("agentNameInput").value = "";
   document.getElementById("agentTaskInput").value = "";
-  document.getElementById("agentModelSelect").value = "google_genai:gemini-flash-latest";
+  document.getElementById("agentModelSelect").value = "google_genai:gemini-2.5-flash";
   populateModalToolCheckboxes(["web_search"]);
   agentModal.showModal();
 };
@@ -1772,7 +1772,7 @@ function openEditAgentModal(agent) {
   document.getElementById("editAgentId").value = agent.id;
   document.getElementById("agentNameInput").value = agent.name;
   document.getElementById("agentTaskInput").value = agent.task;
-  document.getElementById("agentModelSelect").value = agent.model || "google_genai:gemini-flash-latest";
+  document.getElementById("agentModelSelect").value = agent.model || "google_genai:gemini-2.5-flash";
   populateModalToolCheckboxes(agent.tools || []);
   agentModal.showModal();
 }

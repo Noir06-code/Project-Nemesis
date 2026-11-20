@@ -7,7 +7,7 @@ import uuid
 from typing import Optional
 
 AGENTS_FILE = "data/agents.json"
-DEFAULT_MODEL = "google_genai:gemini-flash-latest"
+DEFAULT_MODEL = "google_genai:gemini-2.5-flash"
 
 DEFAULT_AGENTS = [
     {
@@ -69,8 +69,7 @@ class AgentManager:
                         if isinstance(data, list):
                             for a in data:
                                 if "id" in a:
-                                    # Ensure reliable model without quota lock
-                                    if a.get("model") in ("google_genai:gemini-2.5-flash", "google_genai:gemini-2.5-flash-lite"):
+                                    if a.get("model") == "google_genai:gemini-flash-latest" or not a.get("model"):
                                         a["model"] = DEFAULT_MODEL
                                     self.agents[a["id"]] = a
                         elif isinstance(data, dict):

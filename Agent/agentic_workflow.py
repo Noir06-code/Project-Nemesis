@@ -315,7 +315,7 @@ class Agent:
         self,
         id: str = None,
         name: str = "Agent",
-        model: str = "google_genai:gemini-flash-latest",
+        model: str = "google_genai:gemini-2.5-flash",
         system_prompt: str = "",
         tools: list = None
     ):
